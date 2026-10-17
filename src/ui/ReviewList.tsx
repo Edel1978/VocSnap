@@ -11,6 +11,8 @@ export function ReviewList(props: {
   lessonId: string
   initial: ScannedWord[]
   skipped: string[]
+  // Kleiner Hinweis, z. B. welcher Anbieter das Ergebnis geliefert hat.
+  note?: string
   onBack: () => void
   onSaved: () => void
 }) {
@@ -46,6 +48,7 @@ export function ReviewList(props: {
   return (
     <div className="space-y-4">
       <Section title={`Prüfen (${valid.length})`}>
+        {props.note && <p className="-mt-2 mb-2 text-xs text-slate-500">{props.note}</p>}
         {rows.length === 0 && <p className={muted}>Keine Vokabeln mehr in der Liste.</p>}
         <ul className="divide-y divide-slate-200 dark:divide-slate-800">
           {rows.map((r, i) => (
