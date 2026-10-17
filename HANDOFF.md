@@ -11,7 +11,7 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | E0 Fundament | fertig | Gerüst, Datenmodell, Store, Anbieter-Schnittstelle, Einstellungen, Dark Mode, Pages-Workflow |
 | E1 Nutzbarer Kern | fertig | Profile, Lektionen, Eingabe, Text-Import, Karteikarten (Umdrehen/Swipe), Fehler wiederholen, Start-Hinweis, Export/Import |
 | E2 Scan | fertig | Foto-Scan mit Tesseract (lokal) und Gemini (Key), Prüftabelle, Beispielsatz und Warnhinweis über Gemini, Foto wird verworfen |
-| E3 Lernmodi | offen | |
+| E3 Lernmodi | fertig | Leitner (5 Fächer, fällige Karten), Multiple Choice, Tippen, Hören und Schreiben, Fehlertoleranz |
 | E4 Klassenarbeit und Matching | offen | |
 | E5 Motivation und Feinschliff | offen | |
 
@@ -24,6 +24,7 @@ Status: offen / in Arbeit / fertig.
 | E0 | bitte nachtragen | bitte nachtragen |
 | E1 | bitte nachtragen | bitte nachtragen |
 | E2 | bitte nachtragen | bitte nachtragen |
+| E3 | bitte nachtragen | bitte nachtragen |
 
 Der Verbrauch ist in der Sitzung nicht sichtbar und muss in der Abrechnung nachgesehen werden.
 
@@ -31,8 +32,8 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-1. Gemini einmal mit echtem Key testen (hier ohne Key nur bis zur Key-Prüfung von Google getestet).
-2. E3 beginnen (siehe `SPEC.md`, Abschnitt 6).
+1. Sprachausgabe (Hören und Schreiben) auf dem Handy prüfen, vor allem, ob englische und französische Stimmen vorhanden sind.
+2. E4 beginnen (siehe `SPEC.md`, Abschnitt 6). Matching nutzt `batchSize` > 1 der Modus-Schnittstelle.
 
 Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.github/workflows/deploy.yml` (vorher Tests). Pages ist auf „GitHub Actions" eingestellt.
 
@@ -57,6 +58,10 @@ Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.githu
 | `src/import/parsePairs.ts` | Text aus der Zwischenablage in Vokabelpaare zerlegen |
 | `src/learn/session.ts` | Lernrunde: Abfragen bauen, Antworten, Fehler sammeln |
 | `src/learn/stats.ts` | Aus Ereignissen: heute gelernt, offene Fehler |
+| `src/learn/leitner.ts` | Fach und Fälligkeit je Karte (Wort + Richtung), komplett aus Ereignissen berechnet |
+| `src/learn/tolerance.ts` | Bewertung getippter Antworten (richtig / halb / falsch) |
+| `src/learn/choices.ts` | Antwortauswahl für Multiple Choice |
+| `src/modes/choice/`, `typing/`, `listen/`, `shared/` | Lernmodi und gemeinsame Teile (Eingabe, Rückmeldung, Sprachausgabe in `speech.ts`) |
 | `src/modes/modes.ts` | Kennungen und Standard-Reihenfolge der Lernmodi |
 | `src/modes/types.ts`, `registry.ts` | Schnittstelle `LearningMode` und Liste der fertigen Modi |
 | `src/modes/flashcard/` | Karteikarte (Umdrehen oder Swipe, Tastatur: Leertaste, Pfeile) |
@@ -70,7 +75,7 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Standard-Texterkennung: Tesseract. Optional Gemini mit kostenlosem Key. Weitere Anbieter über dieselbe Schnittstelle.
 - Datenmodell ist von Anfang an sync-fähig, der Sync selbst kommt später.
 - Karteikarten: Bestätigung per Umdrehen oder per Swipe, einstellbar.
-- Fehlertoleranz: ein Buchstabe daneben oder falsche Groß-/Kleinschreibung zählt als halber Fehler. Details noch offen.
+- Fehlertoleranz: ein Buchstabe daneben oder falsche Groß-/Kleinschreibung zählt als halber Fehler.
 - Einstellungen und Keys liegen in localStorage (gerätebezogen), synchronisierbare Daten in IndexedDB.
 - Design: Dunkel (Standard) oder Hell, kein „System".
 - ReviewEvent hat dieselben Sync-Pflichtfelder, wird aber nie geändert.
@@ -80,7 +85,16 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Löschen von Profil oder Lektion markiert abhängige Lektionen und Wörter mit. Ereignisse bleiben.
 - Import führt zusammen (neuestes `updated_at` gewinnt, Ereignisse werden vereinigt), nichts wird gelöscht.
 - „Fehler wiederholen" auf der Startseite: Wörter, deren letzte Abfrage falsch war. Bis Leitner (E3) gibt es keine Fälligkeit, gelernt werden alle Wörter der gewählten Lektionen.
-- Karteikarte kennt nur gewusst/nicht gewusst, kein halber Fehler.
+- Karteikarte kennt nur gewusst/nicht gewusst, kein halber Fehler. Multiple Choice ebenso.
+- Leitner: Karte = Wort + Richtung. Neue Karten sind Fach 1 und sofort fällig. Fällig, wenn seit der letzten Abfrage (lokaler Kalendertag) mindestens der Abstand des Fachs vergangen ist. Jede Abfrage zählt, auch freies Üben und Fehlerrunden.
+- „Nur fällige Wörter" ist Standard beim normalen Lernen. Bei „Fehler wiederholen" und „Diese Lektion lernen" wird alles abgefragt.
+- Hören und Schreiben: Das gefragte Wort wird vorgelesen statt angezeigt (Richtung wie bei den anderen Modi). Ohne Sprachausgabe wird das Wort angezeigt.
+- Fehlertoleranz (offene Punkte aus der SPEC vorläufig so entschieden, änderbar in `tolerance.ts`):
+  - Ein Buchstabe daneben ist halb, erst ab drei Buchstaben im Lösungswort.
+  - Ein fehlender oder falscher Akzent zählt als ein Buchstabe, also halb. Zwei Akzentfehler sind falsch.
+  - Mehrere Antworten mit `,` `;` `/` getrennt: Jede zählt als richtig.
+  - Teile in Klammern sind optional.
+  - Fehlender Artikel (der/die/das, the/a, le/la/l'/les …) ist halb.
 - Tesseract läuft komplett aus der eigenen App (kein CDN), Sprachdaten `best_int` für Englisch, Französisch, Deutsch (ca. 5 MB, werden erst beim ersten Scan geladen). Neue Sprache: `@tesseract.js-data/<code>` installieren und in `TESSERACT_LANGS` eintragen.
 - Gemini-Modell ist der Alias `gemini-flash-latest`, damit kein Modellname veraltet.
 - Gemini: Bei Überlastung (HTTP 5xx) bis zu zwei automatische Wiederholungen nach 2 und 5 s. Bei 429 keine Wiederholung. Fehlermeldungen nennen den HTTP-Code oder Abbruchgrund.
@@ -89,7 +103,7 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 
 ## Offene Punkte
 
-- Fehlertoleranz: Akzente (Französisch), mehrere richtige Antworten, Artikel.
+- Fehlertoleranz: vorläufige Entscheidungen (siehe oben) im Alltag prüfen.
 - Reihenfolge der Lernmodi im Menü (vorläufig: Karteikarte, Multiple Choice, Tippen, Hören und Schreiben, Matching).
 - Gemini-Bedingungen bei Gelegenheit direkt auf ai.google.dev gegenlesen.
 - Scan-Qualität bei echten Buchseiten (Lautschrift-Spalte, drei Spalten) beobachten, ggf. `layout.ts` anpassen.

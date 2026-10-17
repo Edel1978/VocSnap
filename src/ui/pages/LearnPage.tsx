@@ -13,6 +13,7 @@ import {
   type SessionState,
   type StudyItem,
 } from '../../learn/session'
+import { cardKey, computeStates, isDue, type CardState } from '../../learn/leitner'
 import { wrongWordIds } from '../../learn/stats'
 import { MODES, type ModeId } from '../../modes/modes'
 import { LEARNING_MODES } from '../../modes/registry'
@@ -31,6 +32,7 @@ const DIRECTIONS: { value: DirectionChoice; label: string }[] = [
 interface Round {
   mode: ModeId
   session: SessionState
+  pool: Word[]
 }
 
 // Neu einhängen, wenn sich die Adresse ändert (z. B. von „Fehler wiederholen" zu „Lernen").
@@ -51,11 +53,15 @@ function Learn() {
     const lessons = await store.listLessons(profile.id)
     lessons.sort((a, b) => a.created_at.localeCompare(b.created_at))
     const words = await Promise.all(lessons.map((l) => store.listWords(l.id)))
-    const wrong = errorsOnly ? wrongWordIds(await store.listReviewEvents(profile.id)) : null
-    return lessons.map((lesson, i) => ({
-      lesson,
-      words: wrong ? words[i].filter((w) => wrong.has(w.id)) : words[i],
-    }))
+    const events = await store.listReviewEvents(profile.id)
+    const wrong = errorsOnly ? wrongWordIds(events) : null
+    return {
+      states: computeStates(events),
+      lessons: lessons.map((lesson, i) => ({
+        lesson,
+        words: wrong ? words[i].filter((w) => wrong.has(w.id)) : words[i],
+      })),
+    }
   }, [store, profile, errorsOnly])
 
   if (!profile) return <ErrorBox>Bitte zuerst ein Profil anlegen.</ErrorBox>
@@ -68,21 +74,25 @@ function Learn() {
 
   return (
     <Setup
-      lessons={data.data.filter((x) => x.words.length > 0)}
+      lessons={data.data.lessons.filter((x) => x.words.length > 0)}
+      states={data.data.states}
       errorsOnly={errorsOnly}
       preselected={preselected}
-      onStart={(mode, items) => setRound({ mode, session: startSession(items) })}
+      onStart={(mode, items, pool) => setRound({ mode, session: startSession(items), pool })}
     />
   )
 }
 
 function Setup(props: {
   lessons: { lesson: Lesson; words: Word[] }[]
+  states: Map<string, CardState>
   errorsOnly: boolean
   preselected?: string[]
-  onStart: (mode: ModeId, items: StudyItem[]) => void
+  onStart: (mode: ModeId, items: StudyItem[], pool: Word[]) => void
 }) {
   const { settings } = useApp()
+  // Fehlerrunden und gezielt gewählte Lektionen fragen alles ab, sonst nur fällige Karten.
+  const [dueOnly, setDueOnly] = useState(!props.errorsOnly && !props.preselected)
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(props.preselected ?? props.lessons.map((x) => x.lesson.id)),
   )
@@ -103,7 +113,15 @@ function Setup(props: {
     )
   }
 
-  const words = props.lessons.filter((x) => selected.has(x.lesson.id)).flatMap((x) => x.words)
+  const chosen = props.lessons.filter((x) => selected.has(x.lesson.id))
+  const words = chosen.flatMap((x) => x.words)
+  const lessonOf = new Map(props.lessons.map((x) => [x.lesson.id, x.lesson]))
+  const langs = (w: Word) => {
+    const l = lessonOf.get(w.lesson_id)
+    return { source: l?.source_lang ?? '', target: l?.target_lang ?? '' }
+  }
+  const due = (i: StudyItem) => isDue(props.states.get(cardKey(i.word.id, i.direction)), settings.leitnerIntervals)
+  const items = buildItems(words, dir, { langs, filter: dueOnly ? due : undefined })
   const toggle = (id: string) => {
     const next = new Set(selected)
     if (next.has(id)) next.delete(id)
@@ -169,13 +187,25 @@ function Setup(props: {
           })}
         </div>
       </Section>
+      <label className="flex items-center gap-3 px-1">
+        <input
+          type="checkbox"
+          className="size-5 accent-indigo-600"
+          checked={dueOnly}
+          onChange={(e) => setDueOnly(e.target.checked)}
+        />
+        <span>Nur fällige Wörter</span>
+      </label>
+      {items.length === 0 && dueOnly && words.length > 0 && (
+        <p className={`${muted} px-1`}>Heute ist hier nichts fällig. Haken entfernen, um trotzdem zu üben.</p>
+      )}
       <button
         type="button"
         className={`${primary} w-full`}
-        disabled={words.length === 0 || !mode}
-        onClick={() => mode && props.onStart(mode, buildItems(words, dir))}
+        disabled={items.length === 0 || !mode}
+        onClick={() => mode && props.onStart(mode, items, words)}
       >
-        Start ({words.length} Wörter)
+        Start ({items.length} {items.length === 1 ? 'Abfrage' : 'Abfragen'})
       </button>
     </div>
   )
@@ -233,7 +263,7 @@ function RoundView({
           <button
             type="button"
             className={`${primary} w-full`}
-            onClick={() => setRound({ mode: round.mode, session: startSession(shuffle(wrong)) })}
+            onClick={() => setRound({ ...round, session: startSession(shuffle(wrong)) })}
           >
             Fehler wiederholen ({wrong.length})
           </button>
@@ -269,6 +299,7 @@ function RoundView({
       <mode.Component
         key={`${session.index}-${batch.map((i) => i.word.id + i.direction).join()}`}
         items={batch}
+        pool={round.pool}
         settings={settings}
         onResults={onResults}
       />

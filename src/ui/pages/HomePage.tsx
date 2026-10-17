@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 import { languageLabel } from '../../config/languages'
+import type { Direction } from '../../data/types'
+import { cardKey, computeStates, isDue } from '../../learn/leitner'
 import { learnedToday, wrongWordIds } from '../../learn/stats'
+
+const DIRS: Direction[] = ['to_target', 'to_source']
 import { useApp } from '../AppContext'
 import { ErrorBox, Loading, Section, StorageError } from '../components'
 import { ProfileForm } from '../ProfileForm'
@@ -33,7 +37,8 @@ export function HomePage() {
 }
 
 function ProfileHome({ profileId }: { profileId: string }) {
-  const { store } = useApp()
+  const { store, settings } = useApp()
+  const intervals = settings.leitnerIntervals
   const [data] = useAsync(async () => {
     const lessons = await store.listLessons(profileId)
     lessons.sort((a, b) => a.created_at.localeCompare(b.created_at))
@@ -41,17 +46,23 @@ function ProfileHome({ profileId }: { profileId: string }) {
     const events = await store.listReviewEvents(profileId)
     const wrong = wrongWordIds(events)
     const errors = words.flat().filter((w) => wrong.has(w.id)).length
+    const states = computeStates(events)
+    // Wörter mit mindestens einer fälligen Richtung.
+    const due = words
+      .flat()
+      .filter((w) => DIRS.some((d) => isDue(states.get(cardKey(w.id, d)), intervals))).length
     return {
       lessons: lessons.map((l, i) => ({ lesson: l, count: words[i].length })),
       total: words.flat().length,
       errors,
+      due,
       learnedToday: learnedToday(events),
     }
-  }, [store, profileId])
+  }, [store, profileId, intervals])
 
   if (data.state === 'loading') return <Loading />
   if (data.state === 'error') return <ErrorBox />
-  const { lessons, total, errors } = data.data
+  const { lessons, total, errors, due } = data.data
 
   return (
     <div className="space-y-4">
@@ -64,7 +75,7 @@ function ProfileHome({ profileId }: { profileId: string }) {
       {total > 0 && (
         <div className="grid gap-3">
           <Link to="/lernen" className={primary}>
-            Lernen
+            {due > 0 ? `Lernen (${due} fällig)` : 'Lernen'}
           </Link>
           {errors > 0 && (
             <Link to="/lernen?fehler=1" className={`${button} py-3 text-center`}>
