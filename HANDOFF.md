@@ -83,6 +83,7 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Karteikarte kennt nur gewusst/nicht gewusst, kein halber Fehler.
 - Tesseract läuft komplett aus der eigenen App (kein CDN), Sprachdaten `best_int` für Englisch, Französisch, Deutsch (ca. 5 MB, werden erst beim ersten Scan geladen). Neue Sprache: `@tesseract.js-data/<code>` installieren und in `TESSERACT_LANGS` eintragen.
 - Gemini-Modell ist der Alias `gemini-flash-latest`, damit kein Modellname veraltet.
+- Gemini: Bei Überlastung (HTTP 5xx) bis zu zwei automatische Wiederholungen nach 2 und 5 s. Bei 429 keine Wiederholung. Fehlermeldungen nennen den HTTP-Code oder Abbruchgrund.
 - Fotos werden auf 1600 px verkleinert, nur im Speicher gehalten und nach der Erkennung verworfen.
 - Gemini-Bedingungen (geprüft 2026-10, Originalseite war aus der Arbeitsumgebung nicht erreichbar): Nutzung ab 18, in EU/CH/UK sehen die Bedingungen für Apps bezahlte Dienste vor, dafür keine Nutzung der Daten zum Training. Entscheidung: wie geplant optional, Hinweis in den Einstellungen, Key erstellt ein Erwachsener.
 
