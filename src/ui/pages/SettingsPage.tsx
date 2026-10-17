@@ -1,19 +1,12 @@
-import { useState, type ReactNode } from 'react'
+import { useState } from 'react'
 import { PROVIDERS, type ProviderId } from '../../config/providers'
 import { MODES } from '../../modes/modes'
 import { resolveProvider } from '../../providers/registry'
 import type { Settings } from '../../settings/settings'
 import { useApp } from '../AppContext'
-import { button, card, input } from '../ui'
-
-function Section({ title, children }: { title: string; children: ReactNode }) {
-  return (
-    <section className={card}>
-      <h2 className="mb-3 text-sm font-semibold text-slate-500 uppercase">{title}</h2>
-      {children}
-    </section>
-  )
-}
+import { Section } from '../components'
+import { DataSection } from '../DataSection'
+import { button, input } from '../ui'
 
 function Choice<T extends string>({
   value,
@@ -64,6 +57,8 @@ export function SettingsPage() {
 
   return (
     <div className="space-y-4">
+      <DataSection />
+
       <Section title="Design">
         <Choice<Settings['theme']>
           value={settings.theme}
