@@ -93,14 +93,16 @@ export function LessonPage() {
         </Link>
       )}
 
-      <Section
-        title="Wort hinzufügen"
-        action={
-          <Link to={`/lektion/${lesson.id}/einfuegen`} className={button}>
-            Aus Text einfügen
-          </Link>
-        }
-      >
+      <div className="grid grid-cols-2 gap-2">
+        <Link to={`/lektion/${lesson.id}/scan`} className={`${button} py-3 text-center`}>
+          Foto scannen
+        </Link>
+        <Link to={`/lektion/${lesson.id}/einfuegen`} className={`${button} py-3 text-center`}>
+          Aus Text einfügen
+        </Link>
+      </div>
+
+      <Section title="Wort hinzufügen">
         <WordForm
           submitLabel="Hinzufügen"
           onSubmit={async (w) => {
