@@ -9,7 +9,7 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | Etappe | Status | Notizen |
 |---|---|---|
 | E0 Fundament | fertig | Gerüst, Datenmodell, Store, Anbieter-Schnittstelle, Einstellungen, Dark Mode, Pages-Workflow |
-| E1 Nutzbarer Kern | offen | |
+| E1 Nutzbarer Kern | fertig | Profile, Lektionen, Eingabe, Text-Import, Karteikarten (Umdrehen/Swipe), Fehler wiederholen, Start-Hinweis, Export/Import |
 | E2 Scan | offen | |
 | E3 Lernmodi | offen | |
 | E4 Klassenarbeit und Matching | offen | |
@@ -22,6 +22,7 @@ Status: offen / in Arbeit / fertig.
 | Nach Etappe | Verbraucht | Rest |
 |---|---|---|
 | E0 | bitte nachtragen | bitte nachtragen |
+| E1 | bitte nachtragen | bitte nachtragen |
 
 Der Verbrauch ist in der Sitzung nicht sichtbar und muss in der Abrechnung nachgesehen werden.
 
@@ -29,10 +30,12 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-1. GitHub Pages einmalig aktivieren: Repo → Settings → Pages → Source „GitHub Actions". Danach baut und veröffentlicht jeder Push auf `main` die App (`.github/workflows/deploy.yml`, vorher Tests).
-2. E1 beginnen (siehe `SPEC.md`, Abschnitt 6).
+1. Vor E2: Nutzungsbedingungen und Limits der kostenlosen Gemini-Stufe und den Modellnamen prüfen.
+2. E2 beginnen (siehe `SPEC.md`, Abschnitt 6).
 
-## Aufbau (Stand E0)
+Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.github/workflows/deploy.yml` (vorher Tests). Pages ist auf „GitHub Actions" eingestellt.
+
+## Aufbau
 
 | Pfad | Inhalt |
 |---|---|
@@ -44,8 +47,15 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 | `src/config/providers.ts` | Anbieter, Modellnamen, Key-Bedarf |
 | `src/providers/` | Scan-Schnittstelle (`OcrProvider`, `ScanResult`, `ScanError`), Auswahl mit Rückfall auf Tesseract. Erkennung selbst noch Platzhalter |
 | `src/settings/settings.ts` | Geräte-Einstellungen inkl. Keys, Prüfung beim Laden, localStorage |
+| `src/data/exchange.ts` | Export-Format, Prüfung/Migration (`parseExchange`), Zusammenführen (`mergeRecords`, `mergeEvents`) |
+| `src/config/languages.ts` | Sprachen der Lektionen |
+| `src/import/parsePairs.ts` | Text aus der Zwischenablage in Vokabelpaare zerlegen |
+| `src/learn/session.ts` | Lernrunde: Abfragen bauen, Antworten, Fehler sammeln |
+| `src/learn/stats.ts` | Aus Ereignissen: heute gelernt, offene Fehler |
 | `src/modes/modes.ts` | Kennungen und Standard-Reihenfolge der Lernmodi |
-| `src/ui/` | Hash-Routing, Startseite, Einstellungen. Zugriff auf Daten über `useApp().store` |
+| `src/modes/types.ts`, `registry.ts` | Schnittstelle `LearningMode` und Liste der fertigen Modi |
+| `src/modes/flashcard/` | Karteikarte (Umdrehen oder Swipe, Tastatur: Leertaste, Pfeile) |
+| `src/ui/` | Hash-Routing und Seiten. Zugriff auf Daten nur über `useApp().store` |
 
 Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./`), mit `BASE_PATH` überschreibbar.
 
@@ -59,14 +69,20 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Einstellungen und Keys liegen in localStorage (gerätebezogen), synchronisierbare Daten in IndexedDB.
 - Design: Dunkel (Standard) oder Hell, kein „System".
 - ReviewEvent hat dieselben Sync-Pflichtfelder, wird aber nie geändert.
-- Richtung im Datenmodell: `to_target` / `to_source`, Ergebnis: `correct` / `half` / `wrong`.
+- Richtung im Datenmodell: `to_target` / `to_source`, Ergebnis: `correct` / `half` / `wrong`. `to_target` heißt: Begriff (Fremdsprache) wird gezeigt, Übersetzung gefragt.
+- Aktives Profil steht in den Geräte-Einstellungen (`activeProfileId`).
+- Lernmodi bekommen einen Stapel (`batchSize`) und melden Ergebnisse gesammelt, damit Matching (E4) dieselbe Schnittstelle nutzen kann.
+- Löschen von Profil oder Lektion markiert abhängige Lektionen und Wörter mit. Ereignisse bleiben.
+- Import führt zusammen (neuestes `updated_at` gewinnt, Ereignisse werden vereinigt), nichts wird gelöscht.
+- „Fehler wiederholen" auf der Startseite: Wörter, deren letzte Abfrage falsch war. Bis Leitner (E3) gibt es keine Fälligkeit, gelernt werden alle Wörter der gewählten Lektionen.
+- Karteikarte kennt nur gewusst/nicht gewusst, kein halber Fehler.
 
 ## Offene Punkte
 
 - Fehlertoleranz: Akzente (Französisch), mehrere richtige Antworten, Artikel.
 - Reihenfolge der Lernmodi im Menü (vorläufig: Karteikarte, Multiple Choice, Tippen, Hören und Schreiben, Matching).
 - Nutzungsbedingungen der kostenlosen Gemini-Stufe vor E2 prüfen, ebenso den Modellnamen in `src/config/providers.ts`.
-- Export/Import-Format und Migration älterer Export-Dateien folgen in E1.
+- Beim nächsten `schema_version`-Sprung: Upgrade-Schritt für alte Export-Dateien in `UPGRADES` (`src/data/exchange.ts`) ergänzen.
 - Server und Anbieter für den späteren Sync.
 
 ## Wunschliste (nicht in der laufenden Etappe bauen)
