@@ -1,4 +1,4 @@
-import { DEFAULT_PROVIDER, PROVIDERS, type ProviderId } from '../config/providers'
+import { DEFAULT_PROVIDER_ORDER, PROVIDERS, PROVIDER_IDS, type ProviderId } from '../config/providers'
 import { MODE_IDS, type ModeId } from '../modes/modes'
 
 // Gerätebezogene Einstellungen, werden nicht synchronisiert.
@@ -11,8 +11,11 @@ export interface Settings {
   dailyGoal: number
   modeOrder: ModeId[]
   leitnerIntervals: number[]
-  provider: ProviderId
+  // Reihenfolge der Scan-Anbieter, enthält immer alle.
+  providerOrder: ProviderId[]
   apiKeys: Partial<Record<ProviderId, string>>
+  // Anbieter, deren Key zuletzt abgelehnt wurde. Wird beim Ändern des Keys gelöscht.
+  invalidKeys: ProviderId[]
   activeProfileId: string | null
 }
 
@@ -22,9 +25,17 @@ export const DEFAULT_SETTINGS: Settings = {
   dailyGoal: 20,
   modeOrder: [...MODE_IDS],
   leitnerIntervals: [1, 2, 4, 8, 16],
-  provider: DEFAULT_PROVIDER,
+  providerOrder: [...DEFAULT_PROVIDER_ORDER],
   apiKeys: {},
+  invalidKeys: [],
   activeProfileId: null,
+}
+
+// Übernimmt eine gespeicherte Reihenfolge, entfernt Unbekanntes und hängt Fehlendes in Standard-Reihenfolge an.
+function completeOrder<T extends string>(raw: unknown, known: readonly T[], fallback: readonly T[]): T[] {
+  if (!Array.isArray(raw)) return [...fallback]
+  const unique = [...new Set(raw.filter((x): x is T => known.includes(x as T)))]
+  return [...unique, ...fallback.filter((x) => !unique.includes(x))]
 }
 
 const isPosInt = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n > 0
@@ -37,15 +48,14 @@ export function parseSettings(raw: unknown): Settings {
   if (r.theme === 'dark' || r.theme === 'light') s.theme = r.theme
   if (r.flashcardConfirm === 'flip' || r.flashcardConfirm === 'swipe') s.flashcardConfirm = r.flashcardConfirm
   if (isPosInt(r.dailyGoal)) s.dailyGoal = r.dailyGoal
-  if (Array.isArray(r.modeOrder)) {
-    const known = r.modeOrder.filter((m): m is ModeId => MODE_IDS.includes(m as ModeId))
-    const unique = [...new Set(known)]
-    s.modeOrder = [...unique, ...MODE_IDS.filter((m) => !unique.includes(m))]
-  }
+  s.modeOrder = completeOrder(r.modeOrder, MODE_IDS, MODE_IDS)
   if (Array.isArray(r.leitnerIntervals) && r.leitnerIntervals.length === 5 && r.leitnerIntervals.every(isPosInt)) {
     s.leitnerIntervals = [...r.leitnerIntervals]
   }
-  if (typeof r.provider === 'string' && r.provider in PROVIDERS) s.provider = r.provider as ProviderId
+  s.providerOrder = completeOrder(r.providerOrder, PROVIDER_IDS, DEFAULT_PROVIDER_ORDER)
+  if (Array.isArray(r.invalidKeys)) {
+    s.invalidKeys = r.invalidKeys.filter((p): p is ProviderId => typeof p === 'string' && p in PROVIDERS)
+  }
   if (r.apiKeys && typeof r.apiKeys === 'object') {
     const keys: Settings['apiKeys'] = {}
     for (const [k, v] of Object.entries(r.apiKeys)) {
