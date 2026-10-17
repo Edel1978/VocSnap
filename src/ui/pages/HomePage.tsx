@@ -1,45 +1,114 @@
-import { useEffect, useState } from 'react'
+import { Link } from 'react-router-dom'
+import { languageLabel } from '../../config/languages'
+import { learnedToday, wrongWordIds } from '../../learn/stats'
 import { useApp } from '../AppContext'
-import { card } from '../ui'
-
-type Status = { state: 'loading' } | { state: 'ready'; profiles: number } | { state: 'error' }
+import { ErrorBox, Loading, Section, StorageError } from '../components'
+import { ProfileForm } from '../ProfileForm'
+import { primary, button, muted } from '../ui'
+import { useAsync } from '../useAsync'
 
 export function HomePage() {
-  const { store } = useApp()
-  const [status, setStatus] = useState<Status>({ state: 'loading' })
+  const { profiles, profile, store, updateSettings, reloadProfiles } = useApp()
 
-  useEffect(() => {
-    store
-      .listProfiles()
-      .then((p) => setStatus({ state: 'ready', profiles: p.length }))
-      .catch(() => setStatus({ state: 'error' }))
-  }, [store])
+  if (profiles.state === 'loading') return <Loading />
+  if (profiles.state === 'error') return <StorageError />
+
+  if (!profile) {
+    return (
+      <Section title="Willkommen">
+        <p className="mb-3">Leg zuerst ein Profil an. Jedes Profil hat seinen eigenen Lernstand.</p>
+        <ProfileForm
+          label="Anlegen"
+          onSubmit={async (name) => {
+            const p = await store.createProfile({ name })
+            updateSettings({ activeProfileId: p.id })
+            await reloadProfiles()
+          }}
+        />
+      </Section>
+    )
+  }
+
+  return <ProfileHome profileId={profile.id} />
+}
+
+function ProfileHome({ profileId }: { profileId: string }) {
+  const { store } = useApp()
+  const [data] = useAsync(async () => {
+    const lessons = await store.listLessons(profileId)
+    lessons.sort((a, b) => a.created_at.localeCompare(b.created_at))
+    const words = await Promise.all(lessons.map((l) => store.listWords(l.id)))
+    const events = await store.listReviewEvents(profileId)
+    const wrong = wrongWordIds(events)
+    const errors = words.flat().filter((w) => wrong.has(w.id)).length
+    return {
+      lessons: lessons.map((l, i) => ({ lesson: l, count: words[i].length })),
+      total: words.flat().length,
+      errors,
+      learnedToday: learnedToday(events),
+    }
+  }, [store, profileId])
+
+  if (data.state === 'loading') return <Loading />
+  if (data.state === 'error') return <ErrorBox />
+  const { lessons, total, errors } = data.data
 
   return (
     <div className="space-y-4">
-      <section className={card}>
-        <h2 className="text-lg font-semibold">Willkommen</h2>
-        <p className="mt-1 text-slate-600 dark:text-slate-400">
-          Vokabeln fotografieren, prüfen und lernen. Profile, Lektionen und Lernen folgen in der nächsten Version.
+      {total > 0 && !data.data.learnedToday && (
+        <p className="rounded-2xl bg-amber-100 p-4 font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
+          Du hast heute noch nicht gelernt. Ein paar Minuten reichen schon!
         </p>
-      </section>
-      <section className={card}>
-        <h2 className="text-sm font-semibold text-slate-500 uppercase">Speicher</h2>
-        {status.state === 'loading' && <p className="mt-1">Wird geladen …</p>}
-        {status.state === 'ready' && (
-          <p className="mt-1">
-            Bereit. {status.profiles === 0 ? 'Noch keine Profile.' : `${status.profiles} Profil(e).`}
-          </p>
+      )}
+
+      {total > 0 && (
+        <div className="grid gap-3">
+          <Link to="/lernen" className={primary}>
+            Lernen
+          </Link>
+          {errors > 0 && (
+            <Link to="/lernen?fehler=1" className={`${button} py-3 text-center`}>
+              Fehler wiederholen ({errors})
+            </Link>
+          )}
+        </div>
+      )}
+
+      <Section
+        title="Lektionen"
+        action={
+          <Link to="/lektion/neu" className={button}>
+            + Neu
+          </Link>
+        }
+      >
+        {lessons.length === 0 ? (
+          <p className={muted}>Noch keine Lektionen. Leg eine an und trag Vokabeln ein.</p>
+        ) : (
+          <ul className="-mx-2">
+            {lessons.map(({ lesson, count }) => (
+              <li key={lesson.id}>
+                <Link
+                  to={`/lektion/${lesson.id}`}
+                  className="flex items-center justify-between rounded-lg px-2 py-3 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <span>
+                    <span className="block font-medium">{lesson.title}</span>
+                    <span className={muted}>
+                      {languageLabel(lesson.source_lang)} → {languageLabel(lesson.target_lang)}
+                    </span>
+                  </span>
+                  <span className={muted}>{count} Wörter</span>
+                </Link>
+              </li>
+            ))}
+          </ul>
         )}
-        {status.state === 'error' && (
-          <p className="mt-1 text-red-600 dark:text-red-400">
-            Der Gerätespeicher ist nicht verfügbar. Im privaten Modus des Browsers kann VocSnap keine Daten speichern.
-          </p>
-        )}
-        <p className="mt-2 text-sm text-slate-500">
-          Daten liegen nur auf diesem Gerät. Regelmäßig exportieren, der Browserspeicher kann gelöscht werden.
-        </p>
-      </section>
+      </Section>
+
+      <p className={`${muted} px-1`}>
+        Daten liegen nur auf diesem Gerät. Regelmäßig in den Einstellungen exportieren.
+      </p>
     </div>
   )
 }
