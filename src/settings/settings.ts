@@ -13,6 +13,7 @@ export interface Settings {
   leitnerIntervals: number[]
   provider: ProviderId
   apiKeys: Partial<Record<ProviderId, string>>
+  activeProfileId: string | null
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -23,6 +24,7 @@ export const DEFAULT_SETTINGS: Settings = {
   leitnerIntervals: [1, 2, 4, 8, 16],
   provider: DEFAULT_PROVIDER,
   apiKeys: {},
+  activeProfileId: null,
 }
 
 const isPosInt = (n: unknown): n is number => typeof n === 'number' && Number.isInteger(n) && n > 0
@@ -51,6 +53,7 @@ export function parseSettings(raw: unknown): Settings {
     }
     s.apiKeys = keys
   }
+  if (typeof r.activeProfileId === 'string') s.activeProfileId = r.activeProfileId
   return s
 }
 
