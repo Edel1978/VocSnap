@@ -1,13 +1,16 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { languageLabel } from '../../config/languages'
-import type { Word } from '../../data/types'
+import type { Direction, Word } from '../../data/types'
+import { BOXES, boxOf, cardKey, computeStates } from '../../learn/leitner'
 import { useApp } from '../AppContext'
 import { ErrorBox, Loading, Section } from '../components'
 import { LessonForm } from '../LessonForm'
 import { button, danger, muted, primary } from '../ui'
 import { useAsync } from '../useAsync'
 import { WordForm } from '../WordForm'
+
+const DIRS: Direction[] = ['to_target', 'to_source']
 
 export function NewLessonPage() {
   const { store, profile } = useApp()
@@ -28,7 +31,7 @@ export function NewLessonPage() {
 
 export function LessonPage() {
   const { id = '' } = useParams()
-  const { store } = useApp()
+  const { store, profile } = useApp()
   const navigate = useNavigate()
   const [editingLesson, setEditingLesson] = useState(false)
   const [editingWord, setEditingWord] = useState<string | null>(null)
@@ -36,12 +39,16 @@ export function LessonPage() {
     const lesson = await store.getLesson(id)
     const words = lesson ? await store.listWords(id) : []
     words.sort((a, b) => a.created_at.localeCompare(b.created_at))
-    return { lesson, words }
-  }, [store, id])
+    const states = computeStates(profile ? await store.listReviewEvents(profile.id) : [])
+    // Karten je Fach, beide Richtungen zusammen.
+    const boxes = Array.from({ length: BOXES }, () => 0)
+    for (const w of words) for (const d of DIRS) boxes[boxOf(states.get(cardKey(w.id, d))) - 1]++
+    return { lesson, words, boxes }
+  }, [store, id, profile])
 
   if (data.state === 'loading') return <Loading />
   if (data.state === 'error') return <ErrorBox />
-  const { lesson, words } = data.data
+  const { lesson, words, boxes } = data.data
   if (!lesson) return <ErrorBox>Diese Lektion gibt es nicht mehr.</ErrorBox>
 
   return (
@@ -83,6 +90,7 @@ export function LessonPage() {
             <p className={muted}>
               {languageLabel(lesson.source_lang)} → {languageLabel(lesson.target_lang)} · {words.length} Wörter
             </p>
+            {words.length > 0 && <BoxBar boxes={boxes} />}
           </>
         )}
       </Section>
@@ -146,6 +154,19 @@ export function LessonPage() {
           </ul>
         )}
       </Section>
+    </div>
+  )
+}
+
+function BoxBar({ boxes }: { boxes: number[] }) {
+  return (
+    <div className="mt-3 grid grid-cols-5 gap-1 text-center text-xs">
+      {boxes.map((n, i) => (
+        <div key={i} className="rounded-lg bg-slate-100 py-1 dark:bg-slate-800">
+          <div className="text-slate-500">Fach {i + 1}</div>
+          <div className="text-base font-semibold">{n}</div>
+        </div>
+      ))}
     </div>
   )
 }
