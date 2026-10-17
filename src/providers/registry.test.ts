@@ -19,10 +19,16 @@ describe('resolveProvider', () => {
 })
 
 describe('createProvider', () => {
-  it('meldet fehlende Umsetzung als ScanError', async () => {
-    const p = createProvider('tesseract')
-    await expect(p.recognize({ image: new Blob(), sourceLang: 'en', targetLang: 'de' })).rejects.toBeInstanceOf(
-      ScanError,
-    )
+  it('liefert den passenden Anbieter', () => {
+    expect(createProvider('tesseract', {}).id).toBe('tesseract')
+    expect(createProvider('gemini', { gemini: 'k' }).id).toBe('gemini')
+  })
+
+  it('meldet fehlenden Key als ScanError', async () => {
+    const p = createProvider('gemini', {})
+    await expect(p.recognize({ image: new Blob(), sourceLang: 'en', targetLang: 'de' })).rejects.toMatchObject({
+      code: 'no_key',
+    })
+    await expect(p.recognize({ image: new Blob(), sourceLang: 'en', targetLang: 'de' })).rejects.toBeInstanceOf(ScanError)
   })
 })

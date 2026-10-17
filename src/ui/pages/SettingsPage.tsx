@@ -155,6 +155,7 @@ export function SettingsPage() {
             </option>
           ))}
         </select>
+        {provider.note && <p className="mt-2 text-sm text-slate-500">{provider.note}</p>}
         {provider.requiresKey && (
           <div className="mt-3 space-y-2">
             <div className="flex gap-2">
@@ -171,7 +172,7 @@ export function SettingsPage() {
               </button>
             </div>
             <p className="text-sm text-slate-500">
-              Der Key bleibt nur auf diesem Gerät. Er sollte von einem Erwachsenen erstellt werden.
+              Der Key bleibt nur auf diesem Gerät.
               {provider.keyUrl && (
                 <>
                   {' '}

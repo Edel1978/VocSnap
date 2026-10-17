@@ -5,6 +5,7 @@ import { LearnPage } from './pages/LearnPage'
 import { LessonPage, NewLessonPage } from './pages/LessonPage'
 import { PasteImportPage } from './pages/PasteImportPage'
 import { ProfilesPage } from './pages/ProfilesPage'
+import { ScanPage } from './pages/ScanPage'
 import { SettingsPage } from './pages/SettingsPage'
 
 const tab = ({ isActive }: { isActive: boolean }) =>
@@ -41,6 +42,7 @@ export function App() {
               <Route path="/lektion/neu" element={<NewLessonPage />} />
               <Route path="/lektion/:id" element={<LessonPage />} />
               <Route path="/lektion/:id/einfuegen" element={<PasteImportPage />} />
+              <Route path="/lektion/:id/scan" element={<ScanPage />} />
               <Route path="/lernen" element={<LearnPage />} />
               <Route path="/einstellungen" element={<SettingsPage />} />
               <Route path="*" element={<HomePage />} />
