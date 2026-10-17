@@ -34,9 +34,13 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-1. Scan-Kette mit echten Keys testen, vor allem Groq (siehe offene Punkte).
+Stand 2026-10-17 abends: E0 bis E3 und E2b sind fertig, gemergt und online (https://edel1978.github.io/VocSnap/). Scan mit Groq im Alltag getestet und deutlich besser als Gemini.
+
+1. Verbrauchtes Guthaben für E0 bis E3 und E2b in der Tabelle oben nachtragen und prüfen, ob die 70-%-Grenze erreicht ist.
 2. Sprachausgabe (Hören und Schreiben) auf dem Handy prüfen, vor allem, ob englische und französische Stimmen vorhanden sind.
 3. E4 beginnen (siehe `SPEC.md`, Abschnitt 6). Matching nutzt `batchSize` > 1 der Modus-Schnittstelle.
+
+Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
 
 Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.github/workflows/deploy.yml` (vorher Tests). Pages ist auf „GitHub Actions" eingestellt.
 
@@ -104,7 +108,7 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
   - Fehlender Artikel (der/die/das, the/a, le/la/l'/les …) ist halb.
 - Tesseract läuft komplett aus der eigenen App (kein CDN), Sprachdaten `best_int` für Englisch, Französisch, Deutsch (ca. 5 MB, werden erst beim ersten Scan geladen). Neue Sprache: `@tesseract.js-data/<code>` installieren und in `TESSERACT_LANGS` eintragen.
 - Gemini: Aliase `gemini-flash-latest`, Wiederholungen mit dem sparsameren `gemini-flash-lite-latest` (eigenes Kontingent). Bis zu zwei Wiederholungen bei Überlastung (5xx) oder Limit (429), Wartezeit 2 s, dann 5 s.
-- Groq: Modell `qwen/qwen3.8-27b` (laut Suche das Bildmodell, Llama 4 Scout wurde im Juli 2026 abgeschaltet). Eine Wiederholung nach 3 s. Denk-Abschnitte (`<think>`) und Code-Zäune in der Antwort werden entfernt.
+- Groq: Modell `qwen/qwen3.8-27b` (Llama 4 Scout wurde im Juli 2026 abgeschaltet). Am 2026-10-17 mit echtem Key getestet: Aufruf aus dem Browser (CORS), Bild und JSON-Modus funktionieren, Ergebnisse besser als mit Gemini. Eine Wiederholung nach 3 s. Denk-Abschnitte (`<think>`) und Code-Zäune in der Antwort werden entfernt.
 - Fehlerarten: Limit (429), überlastet (5xx), ungültiger Key (401/403, Gemini 400 mit Key-Hinweis), keine Verbindung (Netzwerk oder CORS), unlesbare Antwort, sonst fehlgeschlagen. Bei jedem Fehler wechselt die Kette zum nächsten Anbieter. Nur ein ungültiger Key wird gemerkt (`invalidKeys`) und in den Einstellungen deutlich angezeigt, bis der Key geändert wird.
 - Mindestabstand je Anbieter (`minIntervalMs`): Gemini 6 s, Groq 2,5 s. Gilt zwischen mehreren Seiten und zwischen schnell aufeinanderfolgenden Scans.
 - Mehrere Seiten pro Scan, Ergebnisse landen in einer Prüftabelle. Darüber steht klein, welcher Anbieter welche Seite erkannt hat.
@@ -119,8 +123,8 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Fehlertoleranz: vorläufige Entscheidungen (siehe oben) im Alltag prüfen.
 - Reihenfolge der Lernmodi im Menü (vorläufig: Karteikarte, Multiple Choice, Tippen, Hören und Schreiben, Matching).
 - Gemini-Bedingungen bei Gelegenheit direkt auf ai.google.dev gegenlesen.
-- Groq mit echtem Key testen: Modellname, JSON-Modus mit Bild und ob der Aufruf aus dem Browser erlaubt ist (CORS). Ließ sich aus der Arbeitsumgebung nicht prüfen (api.groq.com gesperrt). Bei CORS-Sperre meldet die Kette „Keine Verbindung" und springt weiter.
 - Groq-Nutzungsbedingungen (Alter, Datennutzung) prüfen.
+- Überlegen, ob Groq in der Standard-Reihenfolge vor Gemini stehen soll (in den Einstellungen schon jetzt änderbar).
 - Scan-Qualität bei echten Buchseiten (Lautschrift-Spalte, drei Spalten) beobachten, ggf. `layout.ts` anpassen.
 - Beim nächsten `schema_version`-Sprung: Upgrade-Schritt für alte Export-Dateien in `UPGRADES` (`src/data/exchange.ts`) ergänzen.
 - Server und Anbieter für den späteren Sync.
