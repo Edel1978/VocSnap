@@ -1,5 +1,6 @@
 import type { Table } from 'dexie'
-import type { VocSnapDb } from './db'
+import { SCHEMA_VERSION, type VocSnapDb } from './db'
+import { mergeEvents, mergeRecords, type ExchangeData, type ImportSummary } from './exchange'
 import { newId, nowIso } from './ids'
 import type { Store } from './store'
 import type { Lesson, Profile, ReviewEvent, SyncRecord, Word } from './types'
@@ -33,8 +34,12 @@ export class DexieStore implements Store {
   }
 
   private async remove<T extends SyncRecord>(table: Table<T, string>, id: string): Promise<void> {
-    const now = nowIso()
-    await this.update(table, id, { deleted_at: now } as Partial<T>)
+    await this.update(table, id, { deleted_at: nowIso() } as Partial<T>)
+  }
+
+  private async removeWordsOf(lessonIds: string[]): Promise<void> {
+    const words = await this.db.words.where('lesson_id').anyOf(lessonIds).toArray()
+    for (const w of words) if (w.deleted_at === null) await this.remove(this.db.words, w.id)
   }
 
   listProfiles() {
@@ -52,7 +57,12 @@ export class DexieStore implements Store {
     return this.update(this.db.profiles, id, patch)
   }
   deleteProfile(id: string) {
-    return this.remove(this.db.profiles, id)
+    return this.db.transaction('rw', this.db.profiles, this.db.lessons, this.db.words, async () => {
+      const lessons = await this.listLessons(id)
+      for (const l of lessons) await this.remove(this.db.lessons, l.id)
+      await this.removeWordsOf(lessons.map((l) => l.id))
+      await this.remove(this.db.profiles, id)
+    })
   }
 
   listLessons(profileId: string) {
@@ -70,7 +80,10 @@ export class DexieStore implements Store {
     return this.update(this.db.lessons, id, patch)
   }
   deleteLesson(id: string) {
-    return this.remove(this.db.lessons, id)
+    return this.db.transaction('rw', this.db.lessons, this.db.words, async () => {
+      await this.removeWordsOf([id])
+      await this.remove(this.db.lessons, id)
+    })
   }
 
   listWords(lessonId: string) {
@@ -107,5 +120,38 @@ export class DexieStore implements Store {
   async listReviewEvents(profileId: string) {
     const rows = await this.active(this.db.reviewEvents.where('profile_id').equals(profileId).toArray())
     return rows.sort((a, b) => a.at.localeCompare(b.at))
+  }
+
+  async exportAll(): Promise<ExchangeData> {
+    const db = this.db
+    return db.transaction('r', db.profiles, db.lessons, db.words, db.reviewEvents, async () => ({
+      app: 'vocsnap' as const,
+      schema_version: SCHEMA_VERSION,
+      exported_at: nowIso(),
+      profiles: await db.profiles.toArray(),
+      lessons: await db.lessons.toArray(),
+      words: await db.words.toArray(),
+      reviewEvents: await db.reviewEvents.toArray(),
+    }))
+  }
+
+  async importAll(data: ExchangeData): Promise<ImportSummary> {
+    const db = this.db
+    return db.transaction('rw', db.profiles, db.lessons, db.words, db.reviewEvents, async () => {
+      const profiles = mergeRecords(await db.profiles.toArray(), data.profiles)
+      const lessons = mergeRecords(await db.lessons.toArray(), data.lessons)
+      const words = mergeRecords(await db.words.toArray(), data.words)
+      const reviewEvents = mergeEvents(await db.reviewEvents.toArray(), data.reviewEvents)
+      await db.profiles.bulkPut(profiles)
+      await db.lessons.bulkPut(lessons)
+      await db.words.bulkPut(words)
+      await db.reviewEvents.bulkPut(reviewEvents)
+      return {
+        profiles: profiles.length,
+        lessons: lessons.length,
+        words: words.length,
+        reviewEvents: reviewEvents.length,
+      }
+    })
   }
 }

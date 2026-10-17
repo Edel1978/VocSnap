@@ -69,3 +69,49 @@ describe('DexieStore', () => {
     await expect(store.updateLesson('fehlt', { title: 'x' })).rejects.toThrow()
   })
 })
+
+describe('Löschen mit Abhängigkeiten', () => {
+  it('Lektion löschen markiert ihre Wörter mit', async () => {
+    const p = await store.createProfile({ name: 'P' })
+    const l = await store.createLesson({ profile_id: p.id, title: 'L', source_lang: 'en', target_lang: 'de' })
+    const w = await store.createWord({ lesson_id: l.id, term: 'a', translation: 'b' })
+    await store.deleteLesson(l.id)
+    expect(await store.listLessons(p.id)).toEqual([])
+    expect((await db.words.get(w.id))?.deleted_at).not.toBeNull()
+  })
+
+  it('Profil löschen markiert Lektionen und Wörter mit', async () => {
+    const p = await store.createProfile({ name: 'P' })
+    const l = await store.createLesson({ profile_id: p.id, title: 'L', source_lang: 'en', target_lang: 'de' })
+    await store.createWord({ lesson_id: l.id, term: 'a', translation: 'b' })
+    await store.deleteProfile(p.id)
+    const raw = await store.exportAll()
+    expect([...raw.profiles, ...raw.lessons, ...raw.words].every((r) => r.deleted_at !== null)).toBe(true)
+  })
+})
+
+describe('Export und Import', () => {
+  it('überträgt alle Daten auf ein anderes Gerät', async () => {
+    const p = await store.createProfile({ name: 'P' })
+    const l = await store.createLesson({ profile_id: p.id, title: 'L', source_lang: 'en', target_lang: 'de' })
+    const w = await store.createWord({ lesson_id: l.id, term: 'a', translation: 'b' })
+    await store.addReviewEvent({ word_id: w.id, profile_id: p.id, direction: 'to_target', mode: 'flashcard', result: 'correct' })
+    const data = await store.exportAll()
+
+    const other = new DexieStore(new VocSnapDb(`test-${crypto.randomUUID()}`), 'device-b')
+    expect(await other.importAll(data)).toEqual({ profiles: 1, lessons: 1, words: 1, reviewEvents: 1 })
+    expect((await other.listWords(l.id)).map((x) => x.term)).toEqual(['a'])
+    expect(await other.listReviewEvents(p.id)).toHaveLength(1)
+    // Zweiter Import ändert nichts.
+    expect(await other.importAll(data)).toEqual({ profiles: 0, lessons: 0, words: 0, reviewEvents: 0 })
+  })
+
+  it('behält lokal neuere Änderungen', async () => {
+    const p = await store.createProfile({ name: 'alt' })
+    const data = await store.exportAll()
+    await new Promise((r) => setTimeout(r, 5))
+    await store.updateProfile(p.id, { name: 'neu' })
+    await store.importAll(data)
+    expect((await store.getProfile(p.id))?.name).toBe('neu')
+  })
+})

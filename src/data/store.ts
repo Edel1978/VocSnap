@@ -1,3 +1,4 @@
+import type { ExchangeData, ImportSummary } from './exchange'
 import type {
   Lesson,
   LessonInput,
@@ -10,6 +11,7 @@ import type {
 } from './types'
 
 // Einzige Schnittstelle der Oberfläche zu den Daten. Listen liefern nur nicht gelöschte Datensätze.
+// Löschen einer Lektion oder eines Profils markiert die zugehörigen Datensätze mit.
 export interface Store {
   listProfiles(): Promise<Profile[]>
   getProfile(id: string): Promise<Profile | undefined>
@@ -31,4 +33,8 @@ export interface Store {
 
   addReviewEvent(input: ReviewEventInput): Promise<ReviewEvent>
   listReviewEvents(profileId: string): Promise<ReviewEvent[]>
+
+  exportAll(): Promise<ExchangeData>
+  // Erwartet geprüfte Daten (parseExchange) und führt sie nach der Konfliktregel zusammen.
+  importAll(data: ExchangeData): Promise<ImportSummary>
 }
