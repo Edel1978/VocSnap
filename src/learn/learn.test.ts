@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ReviewEvent, Word } from '../data/types'
-import { answer, buildItems, current, isFinished, prompt, solution, startSession, summary, wrongItems } from './session'
+import { answer, buildItems, current, isFinished, prompt, promptLang, solution, startSession, summary, wrongItems } from './session'
 import { learnedToday, wrongWordIds } from './stats'
 
 const word = (id: string): Word =>
@@ -18,13 +18,18 @@ describe('Lernrunde', () => {
 
   it('zeigt je nach Richtung Begriff oder Übersetzung', () => {
     const w = word('1')
-    expect(prompt({ word: w, direction: 'to_target' })).toBe('t1')
-    expect(solution({ word: w, direction: 'to_target' })).toBe('ü1')
-    expect(prompt({ word: w, direction: 'to_source' })).toBe('ü1')
+    const langs = { source: 'en', target: 'de' }
+    expect(prompt({ word: w, direction: 'to_target', langs })).toBe('t1')
+    expect(solution({ word: w, direction: 'to_target', langs })).toBe('ü1')
+    expect(prompt({ word: w, direction: 'to_source', langs })).toBe('ü1')
+    expect(promptLang({ word: w, direction: 'to_source', langs })).toBe('de')
+    const filtered = buildItems([w, word('2')], 'both', { filter: (i) => i.word.id === '2', langs: () => langs })
+    expect(filtered.map((i) => i.direction).sort()).toEqual(['to_source', 'to_target'])
+    expect(filtered[0].langs).toEqual(langs)
   })
 
   it('läuft durch und sammelt Fehler', () => {
-    const items = buildItems([word('1'), word('2'), word('3')], 'to_target', () => 0.5)
+    const items = buildItems([word('1'), word('2'), word('3')], 'to_target', { rnd: () => 0.5 })
     let s = startSession(items)
     s = answer(s, 'correct')
     s = answer(s, 'wrong')
