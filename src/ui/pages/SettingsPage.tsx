@@ -1,11 +1,9 @@
-import { useState } from 'react'
-import { PROVIDERS, type ProviderId } from '../../config/providers'
 import { MODES } from '../../modes/modes'
-import { resolveProvider } from '../../providers/registry'
 import type { Settings } from '../../settings/settings'
 import { useApp } from '../AppContext'
 import { Section } from '../components'
 import { DataSection } from '../DataSection'
+import { ProviderSection } from '../ProviderSection'
 import { button, input } from '../ui'
 
 function Choice<T extends string>({
@@ -37,9 +35,6 @@ function Choice<T extends string>({
 
 export function SettingsPage() {
   const { settings, updateSettings } = useApp()
-  const [showKey, setShowKey] = useState(false)
-  const provider = PROVIDERS[settings.provider]
-  const active = resolveProvider(settings.provider, settings.apiKeys)
 
   const move = (i: number, d: -1 | 1) => {
     const order = [...settings.modeOrder]
@@ -143,53 +138,7 @@ export function SettingsPage() {
         </div>
       </Section>
 
-      <Section title="Texterkennung">
-        <select
-          className={input}
-          value={settings.provider}
-          onChange={(e) => updateSettings({ provider: e.target.value as ProviderId })}
-        >
-          {Object.values(PROVIDERS).map((p) => (
-            <option key={p.id} value={p.id}>
-              {p.label}
-            </option>
-          ))}
-        </select>
-        {provider.note && <p className="mt-2 text-sm text-slate-500">{provider.note}</p>}
-        {provider.requiresKey && (
-          <div className="mt-3 space-y-2">
-            <div className="flex gap-2">
-              <input
-                type={showKey ? 'text' : 'password'}
-                autoComplete="off"
-                placeholder="API-Key"
-                className={input}
-                value={settings.apiKeys[provider.id] ?? ''}
-                onChange={(e) => updateSettings({ apiKeys: { ...settings.apiKeys, [provider.id]: e.target.value.trim() } })}
-              />
-              <button type="button" className={button} onClick={() => setShowKey((s) => !s)}>
-                {showKey ? 'Verbergen' : 'Zeigen'}
-              </button>
-            </div>
-            <p className="text-sm text-slate-500">
-              Der Key bleibt nur auf diesem Gerät.
-              {provider.keyUrl && (
-                <>
-                  {' '}
-                  <a className="text-indigo-600 underline dark:text-indigo-400" href={provider.keyUrl} target="_blank" rel="noreferrer">
-                    Key erstellen
-                  </a>
-                </>
-              )}
-            </p>
-          </div>
-        )}
-        {active !== settings.provider && (
-          <p className="mt-2 text-sm text-amber-600 dark:text-amber-400">
-            Kein Key eingetragen. Es wird {PROVIDERS[active].label} verwendet.
-          </p>
-        )}
-      </Section>
+      <ProviderSection />
     </div>
   )
 }

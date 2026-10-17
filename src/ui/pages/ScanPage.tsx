@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { PROVIDERS, SCAN_MAX_EDGE, type ProviderId } from '../../config/providers'
-import { createProvider, resolveProvider } from '../../providers/registry'
-import { SCAN_ERROR_TEXT, ScanError, type ScanResult } from '../../providers/types'
+import { ChainError, hasKey, runChain, type ChainAttempt } from '../../providers/chain'
+import { createProvider } from '../../providers/registry'
+import { SCAN_ERROR_TEXT, type ScannedWord } from '../../providers/types'
 import { useApp } from '../AppContext'
 import { ErrorBox, Loading, Section } from '../components'
 import { shrinkImage } from '../image'
@@ -10,62 +11,103 @@ import { ReviewList } from '../ReviewList'
 import { button, muted, primary } from '../ui'
 import { useAsync } from '../useAsync'
 
-type Phase = { name: 'pick' } | { name: 'scanning'; progress: number | null } | { name: 'review'; result: ScanResult }
+interface Collected {
+  words: ScannedWord[]
+  skipped: string[]
+  note: string
+}
+
+type Phase =
+  | { name: 'pick' }
+  | { name: 'scanning'; page: number; pages: number; provider: ProviderId | null; progress: number | null }
+  | { name: 'review'; result: Collected }
+
+// Fehlversuche einer Seite als kurze Liste für die Anzeige.
+function describe(attempts: ChainAttempt[]): string[] {
+  return attempts.map((a) => `${PROVIDERS[a.provider].label}: ${a.message ?? SCAN_ERROR_TEXT[a.error ?? 'failed']}`)
+}
 
 export function ScanPage() {
   const { id = '' } = useParams()
-  const { store, settings } = useApp()
+  const { store, settings, updateSettings } = useApp()
   const navigate = useNavigate()
   const [lesson] = useAsync(() => store.getLesson(id), [store, id])
-  const [photo, setPhoto] = useState<Blob | null>(null)
-  const [preview, setPreview] = useState<string | null>(null)
+  const [photos, setPhotos] = useState<Blob[]>([])
+  const [previews, setPreviews] = useState<string[]>([])
   const [phase, setPhase] = useState<Phase>({ name: 'pick' })
-  const [error, setError] = useState<{ text: string; retryTesseract: boolean } | null>(null)
+  const [errors, setErrors] = useState<string[] | null>(null)
   const cameraRef = useRef<HTMLInputElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
-  const preferred = resolveProvider(settings.provider, settings.apiKeys)
+  const chain = settings.providerOrder.filter((p) => hasKey(p, settings.apiKeys))
 
-  // Vorschau-URL freigeben, sobald das Foto verworfen wird.
+  // Vorschau-URLs freigeben, sobald Fotos verworfen werden.
   useEffect(() => {
-    if (!photo) return setPreview(null)
-    const url = URL.createObjectURL(photo)
-    setPreview(url)
-    return () => URL.revokeObjectURL(url)
-  }, [photo])
+    const urls = photos.map((p) => URL.createObjectURL(p))
+    setPreviews(urls)
+    return () => urls.forEach((u) => URL.revokeObjectURL(u))
+  }, [photos])
 
   if (lesson.state === 'loading') return <Loading />
   if (lesson.state === 'error') return <ErrorBox />
   if (!lesson.data) return <ErrorBox>Diese Lektion gibt es nicht mehr.</ErrorBox>
   const { source_lang, target_lang } = lesson.data
 
-  const pick = (f: File | undefined) => {
-    setError(null)
-    if (f) setPhoto(f)
+  const add = (files: FileList | null) => {
+    setErrors(null)
+    // FileList leert sich beim Zurücksetzen des Feldes, daher vorher kopieren.
+    const added = files ? Array.from(files) : []
+    if (added.length) setPhotos((p) => [...p, ...added])
     if (cameraRef.current) cameraRef.current.value = ''
     if (fileRef.current) fileRef.current.value = ''
   }
 
-  const scan = async (providerId: ProviderId) => {
-    if (!photo) return
-    setError(null)
-    setPhase({ name: 'scanning', progress: null })
-    try {
-      const image = await shrinkImage(photo, SCAN_MAX_EDGE)
-      const result = await createProvider(providerId, settings.apiKeys).recognize({
-        image,
-        sourceLang: source_lang,
-        targetLang: target_lang,
-        onProgress: (p) => setPhase({ name: 'scanning', progress: p }),
-      })
-      if (result.words.length === 0 && result.skipped.length === 0) throw new ScanError('failed')
-      // Foto wird nach der Erkennung verworfen.
-      setPhoto(null)
-      setPhase({ name: 'review', result })
-    } catch (e) {
-      const text = e instanceof ScanError ? e.message : SCAN_ERROR_TEXT.failed
-      setError({ text, retryTesseract: providerId !== 'tesseract' })
-      setPhase({ name: 'pick' })
+  const scan = async () => {
+    setErrors(null)
+    const collected: Collected = { words: [], skipped: [], note: '' }
+    const used: string[] = []
+    const failed: string[] = []
+    const invalid = new Set(settings.invalidKeys)
+
+    for (let i = 0; i < photos.length; i++) {
+      const page = photos.length > 1 ? `Seite ${i + 1}: ` : ''
+      setPhase({ name: 'scanning', page: i + 1, pages: photos.length, provider: null, progress: null })
+      try {
+        const image = await shrinkImage(photos[i], SCAN_MAX_EDGE)
+        const { result, attempts } = await runChain(
+          settings.providerOrder,
+          settings.apiKeys,
+          {
+            image,
+            sourceLang: source_lang,
+            targetLang: target_lang,
+            onProgress: (progress) => setPhase((ph) => (ph.name === 'scanning' ? { ...ph, progress } : ph)),
+          },
+          {
+            create: createProvider,
+            onTry: (provider) => setPhase((ph) => (ph.name === 'scanning' ? { ...ph, provider, progress: null } : ph)),
+          },
+        )
+        attempts.forEach((a) => (a.error === 'invalid_key' ? invalid.add(a.provider) : !a.error && invalid.delete(a.provider)))
+        collected.words.push(...result.words)
+        collected.skipped.push(...result.skipped)
+        used.push(`${page}${PROVIDERS[result.provider].label}`)
+      } catch (e) {
+        const attempts = e instanceof ChainError ? e.attempts : []
+        attempts.forEach((a) => a.error === 'invalid_key' && invalid.add(a.provider))
+        failed.push(`${page}nicht erkannt`, ...describe(attempts))
+      }
     }
+
+    updateSettings({ invalidKeys: [...invalid] })
+    if (collected.words.length === 0 && collected.skipped.length === 0) {
+      setErrors(failed.length ? failed : [SCAN_ERROR_TEXT.failed])
+      setPhase({ name: 'pick' })
+      return
+    }
+    // Fotos werden nach der Erkennung verworfen.
+    setPhotos([])
+    collected.note = [`Erkannt mit ${used.join(', ')}`, ...failed.filter((f) => f.endsWith('nicht erkannt'))].join(' · ')
+    setPhase({ name: 'review', result: collected })
   }
 
   if (phase.name === 'review') {
@@ -74,6 +116,7 @@ export function ScanPage() {
         lessonId={id}
         initial={phase.result.words}
         skipped={phase.result.skipped}
+        note={phase.result.note}
         onBack={() => setPhase({ name: 'pick' })}
         onSaved={() => navigate(`/lektion/${id}`, { replace: true })}
       />
@@ -82,15 +125,15 @@ export function ScanPage() {
 
   if (phase.name === 'scanning') {
     return (
-      <Section title="Erkennung läuft">
-        <p className="mb-3">{PROVIDERS[preferred].label}</p>
+      <Section title={phase.pages > 1 ? `Seite ${phase.page} von ${phase.pages}` : 'Erkennung läuft'}>
+        <p className="mb-3">{phase.provider ? `${PROVIDERS[phase.provider].label} …` : 'Foto wird vorbereitet …'}</p>
         <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
           <div
             className={`h-full bg-indigo-600 transition-all ${phase.progress === null ? 'w-1/3 animate-pulse' : ''}`}
             style={phase.progress === null ? undefined : { width: `${Math.round(phase.progress * 100)}%` }}
           />
         </div>
-        <p className={`${muted} mt-3`}>Das kann beim ersten Mal etwas dauern.</p>
+        <p className={`${muted} mt-3`}>Fällt ein Anbieter aus, übernimmt automatisch der nächste.</p>
       </Section>
     )
   }
@@ -99,18 +142,32 @@ export function ScanPage() {
     <div className="space-y-4">
       <Section title="Foto scannen">
         <p className={`${muted} mb-3`}>
-          Vokabelliste gerade und gut beleuchtet fotografieren. Das Foto wird nicht gespeichert und nach der Erkennung
-          verworfen.
+          Vokabelliste gerade und gut beleuchtet fotografieren. Mehrere Seiten sind möglich. Fotos werden nicht gespeichert
+          und nach der Erkennung verworfen.
         </p>
-        {preview ? (
-          <img src={preview} alt="Ausgewähltes Foto" className="mb-3 max-h-72 w-full rounded-xl object-contain" />
-        ) : null}
+        {previews.length > 0 && (
+          <div className="mb-3 grid grid-cols-3 gap-2">
+            {previews.map((url, i) => (
+              <div key={url} className="relative">
+                <img src={url} alt={`Seite ${i + 1}`} className="h-28 w-full rounded-lg object-cover" />
+                <button
+                  type="button"
+                  aria-label={`Seite ${i + 1} entfernen`}
+                  onClick={() => setPhotos((p) => p.filter((_, j) => j !== i))}
+                  className="absolute top-1 right-1 size-7 rounded-full bg-black/60 text-white"
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
         <div className="grid grid-cols-2 gap-2">
           <button type="button" className={`${button} py-3`} onClick={() => cameraRef.current?.click()}>
             Kamera
           </button>
           <button type="button" className={`${button} py-3`} onClick={() => fileRef.current?.click()}>
-            Bild wählen
+            Bilder wählen
           </button>
         </div>
         <input
@@ -119,29 +176,26 @@ export function ScanPage() {
           accept="image/*"
           capture="environment"
           className="hidden"
-          onChange={(e) => pick(e.target.files?.[0])}
+          onChange={(e) => add(e.target.files)}
         />
-        <input ref={fileRef} type="file" accept="image/*" className="hidden" onChange={(e) => pick(e.target.files?.[0])} />
+        <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => add(e.target.files)} />
       </Section>
 
-      {error && (
-        <div className="space-y-2">
-          <ErrorBox>{error.text}</ErrorBox>
-          {error.retryTesseract && photo && (
-            <button type="button" className={`${button} w-full py-3`} onClick={() => scan('tesseract')}>
-              Mit Tesseract versuchen
-            </button>
-          )}
-        </div>
+      {errors && (
+        <ErrorBox>
+          <span className="block font-semibold">Kein Anbieter konnte das Foto erkennen.</span>
+          {errors.map((e, i) => (
+            <span key={i} className="block text-sm">
+              {e}
+            </span>
+          ))}
+        </ErrorBox>
       )}
 
-      <button type="button" className={`${primary} w-full`} disabled={!photo} onClick={() => scan(preferred)}>
-        Erkennen
+      <button type="button" className={`${primary} w-full`} disabled={photos.length === 0} onClick={scan}>
+        {photos.length > 1 ? `${photos.length} Seiten erkennen` : 'Erkennen'}
       </button>
-      <p className={`${muted} text-center`}>
-        Erkennung mit {PROVIDERS[preferred].label}
-        {preferred === 'tesseract' && settings.provider !== 'tesseract' && ' (kein Key eingetragen)'}
-      </p>
+      <p className={`${muted} text-center`}>Reihenfolge: {chain.map((p) => PROVIDERS[p].label).join(' → ')}</p>
     </div>
   )
 }

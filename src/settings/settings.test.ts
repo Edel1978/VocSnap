@@ -30,17 +30,27 @@ describe('parseSettings', () => {
   })
 
   it('verwirft ungültige Werte', () => {
-    const s = parseSettings({ theme: 'pink', dailyGoal: -3, leitnerIntervals: [1, 2], provider: 'x', apiKeys: { x: 'k' } })
+    const s = parseSettings({ theme: 'pink', dailyGoal: -3, leitnerIntervals: [1, 2], apiKeys: { x: 'k' }, invalidKeys: ['x', 'groq'] })
     expect(s.theme).toBe('dark')
     expect(s.dailyGoal).toBe(20)
     expect(s.leitnerIntervals).toEqual([1, 2, 4, 8, 16])
-    expect(s.provider).toBe('tesseract')
     expect(s.apiKeys).toEqual({})
+    expect(s.invalidKeys).toEqual(['groq'])
   })
 
   it('ergänzt fehlende Modi und entfernt unbekannte', () => {
     const s = parseSettings({ modeOrder: ['matching', 'typing', 'typing', 'foo'] })
     expect(s.modeOrder).toEqual(['matching', 'typing', 'flashcard', 'multiple_choice', 'listen_write'])
+  })
+})
+
+describe('Anbieter-Reihenfolge', () => {
+  it('Standard ist Gemini, Groq, Tesseract', () => {
+    expect(parseSettings(null).providerOrder).toEqual(['gemini', 'groq', 'tesseract'])
+  })
+
+  it('übernimmt eigene Reihenfolge und ergänzt Fehlendes', () => {
+    expect(parseSettings({ providerOrder: ['groq', 'foo', 'groq'] }).providerOrder).toEqual(['groq', 'gemini', 'tesseract'])
   })
 })
 
