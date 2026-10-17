@@ -42,7 +42,9 @@ describe('Gemini', () => {
     expect(errorForStatus(429, '').code).toBe('quota')
     expect(errorForStatus(400, 'API key not valid').code).toBe('invalid_key')
     expect(errorForStatus(403, '').code).toBe('invalid_key')
-    expect(errorForStatus(500, '').code).toBe('failed')
+    expect(errorForStatus(503, '').code).toBe('busy')
+    expect(errorForStatus(503, '').message).toContain('Code 503')
+    expect(errorForStatus(404, '').code).toBe('failed')
   })
 
   it('schickt den Key im Header und liefert Wörter', async () => {
@@ -60,6 +62,40 @@ describe('Gemini', () => {
     expect(url).not.toContain('geheim')
     expect(init.headers['x-goog-api-key']).toBe('geheim')
     expect(JSON.parse(init.body).contents[0].parts[0].inline_data.data).toBe(btoa('abc'))
+  })
+
+  it('wiederholt bei Überlastung und gibt danach auf', async () => {
+    const ok = new Response(JSON.stringify(reply('{"words":[{"term":"cat","translation":"Katze"}]}')))
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('overloaded', { status: 503 }))
+      .mockResolvedValueOnce(ok)
+    vi.stubGlobal('fetch', fetchMock)
+    const sleep = vi.fn().mockResolvedValue(undefined)
+    const req = { image: new Blob(['a']), sourceLang: 'en', targetLang: 'de' }
+    expect((await geminiProvider('k', sleep).recognize(req)).words).toHaveLength(1)
+    expect(sleep).toHaveBeenCalledTimes(1)
+
+    fetchMock.mockReset().mockImplementation(async () => new Response('', { status: 503 }))
+    await expect(geminiProvider('k', sleep).recognize(req)).rejects.toMatchObject({ code: 'busy' })
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('wiederholt nicht bei Kontingent-Fehlern', async () => {
+    const fetchMock = vi.fn().mockImplementation(async () => new Response('', { status: 429 }))
+    vi.stubGlobal('fetch', fetchMock)
+    const req = { image: new Blob(['a']), sourceLang: 'en', targetLang: 'de' }
+    await expect(geminiProvider('k', async () => {}).recognize(req)).rejects.toMatchObject({ code: 'quota' })
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('ignoriert Denk-Teile und nennt den Abbruchgrund', () => {
+    const json = {
+      candidates: [{ content: { parts: [{ text: 'hm', thought: true }, { text: '{"words":[]}' }] } }],
+    }
+    expect(parseResponse(json)).toEqual([])
+    const cut = { candidates: [{ finishReason: 'MAX_TOKENS', content: { parts: [{ text: '{"words":[' }] } }] }
+    expect(() => parseResponse(cut)).toThrow('MAX_TOKENS')
   })
 
   it('meldet Netzwerkfehler als offline', async () => {

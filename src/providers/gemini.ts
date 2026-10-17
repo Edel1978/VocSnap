@@ -52,19 +52,26 @@ export function buildBody(imageBase64: string, mimeType: string, sourceLang: str
 const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
 
 // Prüft die Antwort und wirft bei unbrauchbarem Inhalt.
+type GeminiReply = {
+  candidates?: { finishReason?: string; content?: { parts?: { text?: string; thought?: boolean }[] } }[]
+}
+
 export function parseResponse(json: unknown): ScannedWord[] {
-  const text = (json as { candidates?: { content?: { parts?: { text?: string }[] } }[] })?.candidates?.[0]?.content
-    ?.parts?.map((p) => p.text ?? '')
+  const candidate = (json as GeminiReply)?.candidates?.[0]
+  const text = candidate?.content?.parts
+    ?.filter((p) => !p.thought)
+    .map((p) => p.text ?? '')
     .join('')
-  if (!text) throw new ScanError('failed')
+  const detail = candidate?.finishReason && candidate.finishReason !== 'STOP' ? candidate.finishReason : undefined
+  if (!text) throw new ScanError('failed', detail ?? 'leere Antwort')
   let data: unknown
   try {
     data = JSON.parse(text)
   } catch {
-    throw new ScanError('failed')
+    throw new ScanError('failed', detail ?? 'Antwort unvollständig')
   }
   const words = (data as { words?: unknown })?.words
-  if (!Array.isArray(words)) throw new ScanError('failed')
+  if (!Array.isArray(words)) throw new ScanError('failed', 'Antwort ohne Wortliste')
   return words
     .map((w) => ({
       term: str(w?.term),
@@ -77,10 +84,19 @@ export function parseResponse(json: unknown): ScannedWord[] {
 }
 
 export function errorForStatus(status: number, body: string): ScanError {
-  if (status === 429) return new ScanError('quota')
-  if (status === 401 || status === 403 || (status === 400 && /api[_ ]?key/i.test(body))) return new ScanError('invalid_key')
-  return new ScanError('failed')
+  const code = `Code ${status}`
+  if (status === 429) return new ScanError('quota', code)
+  if (status === 401 || status === 403 || (status === 400 && /api[_ ]?key/i.test(body))) {
+    return new ScanError('invalid_key', code)
+  }
+  if (status >= 500) return new ScanError('busy', code)
+  return new ScanError('failed', code)
 }
+
+// Wartezeiten vor erneuten Versuchen bei Überlastung.
+const RETRY_DELAYS = [2000, 5000]
+
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
 async function toBase64(blob: Blob): Promise<string> {
   const bytes = new Uint8Array(await blob.arrayBuffer())
@@ -89,25 +105,29 @@ async function toBase64(blob: Blob): Promise<string> {
   return btoa(bin)
 }
 
-export function geminiProvider(apiKey: string): OcrProvider {
+export function geminiProvider(apiKey: string, sleep: (ms: number) => Promise<unknown> = wait): OcrProvider {
   return {
     id: 'gemini',
     async recognize(req: ScanRequest): Promise<ScanResult> {
       if (!apiKey) throw new ScanError('no_key')
       if (typeof navigator !== 'undefined' && navigator.onLine === false) throw new ScanError('offline')
       const body = buildBody(await toBase64(req.image), req.image.type || 'image/jpeg', req.sourceLang, req.targetLang)
-      let res: Response
-      try {
-        res = await fetch(`${cfg.endpoint}/${cfg.model}:generateContent`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-          body: JSON.stringify(body),
-        })
-      } catch {
-        throw new ScanError('offline')
+      for (let attempt = 0; ; attempt++) {
+        let res: Response
+        try {
+          res = await fetch(`${cfg.endpoint}/${cfg.model}:generateContent`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
+            body: JSON.stringify(body),
+          })
+        } catch {
+          throw new ScanError('offline')
+        }
+        if (res.ok) return { provider: 'gemini', words: parseResponse(await res.json()), skipped: [] }
+        const err = errorForStatus(res.status, await res.text().catch(() => ''))
+        if (err.code !== 'busy' || attempt >= RETRY_DELAYS.length) throw err
+        await sleep(RETRY_DELAYS[attempt])
       }
-      if (!res.ok) throw errorForStatus(res.status, await res.text().catch(() => ''))
-      return { provider: 'gemini', words: parseResponse(await res.json()), skipped: [] }
     },
   }
 }

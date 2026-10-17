@@ -24,22 +24,24 @@ export interface ScanRequest {
   onProgress?: (p: number) => void
 }
 
-export type ScanErrorCode = 'no_key' | 'invalid_key' | 'quota' | 'offline' | 'failed'
+export type ScanErrorCode = 'no_key' | 'invalid_key' | 'quota' | 'busy' | 'offline' | 'failed'
 
 export const SCAN_ERROR_TEXT: Record<ScanErrorCode, string> = {
   no_key: 'Für diesen Anbieter fehlt der Key.',
   invalid_key: 'Der Key wurde abgelehnt. Bitte in den Einstellungen prüfen.',
-  quota: 'Das Kontingent ist aufgebraucht. Später erneut versuchen oder Tesseract nutzen.',
+  quota: 'Zu viele Anfragen in kurzer Zeit oder Tageskontingent aufgebraucht. Eine Minute warten oder Tesseract nutzen.',
+  busy: 'Der Dienst ist gerade überlastet. Bitte gleich noch einmal versuchen oder Tesseract nutzen.',
   offline: 'Keine Internetverbindung. Für diesen Scan wird Internet gebraucht.',
   failed: 'Die Erkennung ist fehlgeschlagen. Bitte mit einem schärferen, geraden Foto erneut versuchen.',
 }
 
 export class ScanError extends Error {
+  // detail: technischer Hinweis (z. B. HTTP-Code), wird an die Meldung angehängt.
   constructor(
     public code: ScanErrorCode,
-    message: string = SCAN_ERROR_TEXT[code],
+    detail?: string,
   ) {
-    super(message)
+    super(detail ? `${SCAN_ERROR_TEXT[code]} (${detail})` : SCAN_ERROR_TEXT[code])
     this.name = 'ScanError'
   }
 }
