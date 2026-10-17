@@ -1,6 +1,10 @@
-import { HashRouter, NavLink, Route, Routes } from 'react-router-dom'
-import { AppProvider } from './AppContext'
+import { HashRouter, Link, NavLink, Route, Routes } from 'react-router-dom'
+import { AppProvider, useApp } from './AppContext'
 import { HomePage } from './pages/HomePage'
+import { LearnPage } from './pages/LearnPage'
+import { LessonPage, NewLessonPage } from './pages/LessonPage'
+import { PasteImportPage } from './pages/PasteImportPage'
+import { ProfilesPage } from './pages/ProfilesPage'
 import { SettingsPage } from './pages/SettingsPage'
 
 const tab = ({ isActive }: { isActive: boolean }) =>
@@ -8,17 +12,36 @@ const tab = ({ isActive }: { isActive: boolean }) =>
     isActive ? 'text-indigo-600 dark:text-indigo-400' : 'text-slate-500 dark:text-slate-400'
   }`
 
+function Header() {
+  const { profile } = useApp()
+  return (
+    <header className="flex items-center justify-between px-4 pt-4 pb-2">
+      <Link to="/" className="text-xl font-bold tracking-tight">
+        VocSnap
+      </Link>
+      {profile && (
+        <Link to="/profile" className="max-w-40 truncate rounded-full bg-slate-200 px-3 py-1 text-sm dark:bg-slate-800">
+          {profile.name}
+        </Link>
+      )}
+    </header>
+  )
+}
+
 export function App() {
   return (
     <AppProvider>
       <HashRouter>
         <div className="mx-auto flex min-h-dvh max-w-xl flex-col">
-          <header className="px-4 pt-4 pb-2">
-            <h1 className="text-xl font-bold tracking-tight">VocSnap</h1>
-          </header>
+          <Header />
           <main className="flex-1 px-4 pb-24">
             <Routes>
               <Route path="/" element={<HomePage />} />
+              <Route path="/profile" element={<ProfilesPage />} />
+              <Route path="/lektion/neu" element={<NewLessonPage />} />
+              <Route path="/lektion/:id" element={<LessonPage />} />
+              <Route path="/lektion/:id/einfuegen" element={<PasteImportPage />} />
+              <Route path="/lernen" element={<LearnPage />} />
               <Route path="/einstellungen" element={<SettingsPage />} />
               <Route path="*" element={<HomePage />} />
             </Routes>
@@ -27,6 +50,9 @@ export function App() {
             <div className="mx-auto flex max-w-xl">
               <NavLink to="/" end className={tab}>
                 Start
+              </NavLink>
+              <NavLink to="/lernen" className={tab}>
+                Lernen
               </NavLink>
               <NavLink to="/einstellungen" className={tab}>
                 Einstellungen
