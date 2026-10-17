@@ -3,3 +3,13 @@
 Vokabel-App für den Browser. Vokabelseite fotografieren, Wörter erkennen, prüfen und mit verschiedenen Lernmodi abfragen. Daten bleiben lokal auf dem Gerät.
 
 Stand und Planung: `SPEC.md` und `HANDOFF.md`.
+
+## Entwicklung
+
+```
+npm install
+npm run dev
+npm test
+```
+
+Jeder Push auf `main` wird über GitHub Actions auf GitHub Pages veröffentlicht.
