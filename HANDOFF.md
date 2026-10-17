@@ -11,6 +11,7 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | E0 Fundament | fertig | Gerüst, Datenmodell, Store, Anbieter-Schnittstelle, Einstellungen, Dark Mode, Pages-Workflow |
 | E1 Nutzbarer Kern | fertig | Profile, Lektionen, Eingabe, Text-Import, Karteikarten (Umdrehen/Swipe), Fehler wiederholen, Start-Hinweis, Export/Import |
 | E2 Scan | fertig | Foto-Scan mit Tesseract (lokal) und Gemini (Key), Prüftabelle, Beispielsatz und Warnhinweis über Gemini, Foto wird verworfen |
+| E2b Anbieter-Kette | fertig | Gemini → Groq → Tesseract mit automatischem Wechsel, Groq als zweiter Anbieter, mehrere Seiten pro Scan |
 | E3 Lernmodi | fertig | Leitner (5 Fächer, fällige Karten), Multiple Choice, Tippen, Hören und Schreiben, Fehlertoleranz |
 | E4 Klassenarbeit und Matching | offen | |
 | E5 Motivation und Feinschliff | offen | |
@@ -25,6 +26,7 @@ Status: offen / in Arbeit / fertig.
 | E1 | bitte nachtragen | bitte nachtragen |
 | E2 | bitte nachtragen | bitte nachtragen |
 | E3 | bitte nachtragen | bitte nachtragen |
+| E2b | bitte nachtragen | bitte nachtragen |
 
 Der Verbrauch ist in der Sitzung nicht sichtbar und muss in der Abrechnung nachgesehen werden.
 
@@ -32,8 +34,9 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-1. Sprachausgabe (Hören und Schreiben) auf dem Handy prüfen, vor allem, ob englische und französische Stimmen vorhanden sind.
-2. E4 beginnen (siehe `SPEC.md`, Abschnitt 6). Matching nutzt `batchSize` > 1 der Modus-Schnittstelle.
+1. Scan-Kette mit echten Keys testen, vor allem Groq (siehe offene Punkte).
+2. Sprachausgabe (Hören und Schreiben) auf dem Handy prüfen, vor allem, ob englische und französische Stimmen vorhanden sind.
+3. E4 beginnen (siehe `SPEC.md`, Abschnitt 6). Matching nutzt `batchSize` > 1 der Modus-Schnittstelle.
 
 Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.github/workflows/deploy.yml` (vorher Tests). Pages ist auf „GitHub Actions" eingestellt.
 
@@ -49,7 +52,11 @@ Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.githu
 | `src/config/providers.ts` | Anbieter, Modellnamen, Key-Bedarf |
 | `src/providers/` | Scan-Schnittstelle (`OcrProvider`, `ScanResult`, `ScanError`), Auswahl mit Rückfall auf Tesseract |
 | `src/providers/tesseract.ts`, `layout.ts` | Tesseract im Browser, Wörter nach Position zu Zeilen und Spalten |
-| `src/providers/gemini.ts` | Gemini per REST, Antwort als JSON-Schema, Fehler → `ScanError` |
+| `src/providers/gemini.ts` | Gemini per REST, Antwort als JSON-Schema |
+| `src/providers/groq.ts` | Groq per REST (OpenAI-Format), Bild als data-URL, JSON-Modus |
+| `src/providers/shared.ts` | Gemeinsamer Auftrag, JSON-Auswertung, HTTP-Fehler → `ScanError`, Wiederholungen (`withRetries`) |
+| `src/providers/chain.ts` | Anbieter-Kette: Reihenfolge, Überspringen ohne Key, Wechsel bei Fehler, Mindestabstand zwischen Anfragen |
+| `src/ui/ProviderSection.tsx` | Einstellungen: Reihenfolge, Keys, Hinweis bei abgelehntem Key |
 | `scripts/copy-tesseract.mjs` | Kopiert Worker, Kern und Sprachdaten nach `public/tesseract` (vor `dev` und `build`, nicht im Repo) |
 | `src/ui/ReviewList.tsx` | Prüftabelle für Scan und Text-Import |
 | `src/settings/settings.ts` | Geräte-Einstellungen inkl. Keys, Prüfung beim Laden, localStorage |
@@ -72,7 +79,7 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 ## Entscheidungen
 
 - Hosting zuerst GitHub Pages (öffentliches Repo), später eventuell eigener Webspace.
-- Standard-Texterkennung: Tesseract. Optional Gemini mit kostenlosem Key. Weitere Anbieter über dieselbe Schnittstelle.
+- Texterkennung als Kette (E2b): Standard-Reihenfolge Gemini → Groq → Tesseract, in den Einstellungen änderbar. Anbieter ohne Key werden übersprungen, Tesseract braucht keinen.
 - Datenmodell ist von Anfang an sync-fähig, der Sync selbst kommt später.
 - Karteikarten: Bestätigung per Umdrehen oder per Swipe, einstellbar.
 - Fehlertoleranz: ein Buchstabe daneben oder falsche Groß-/Kleinschreibung zählt als halber Fehler.
@@ -96,8 +103,14 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
   - Teile in Klammern sind optional.
   - Fehlender Artikel (der/die/das, the/a, le/la/l'/les …) ist halb.
 - Tesseract läuft komplett aus der eigenen App (kein CDN), Sprachdaten `best_int` für Englisch, Französisch, Deutsch (ca. 5 MB, werden erst beim ersten Scan geladen). Neue Sprache: `@tesseract.js-data/<code>` installieren und in `TESSERACT_LANGS` eintragen.
-- Gemini-Modell ist der Alias `gemini-flash-latest`, damit kein Modellname veraltet.
-- Gemini: Bei Überlastung (HTTP 5xx) bis zu zwei automatische Wiederholungen nach 2 und 5 s. Bei 429 keine Wiederholung. Fehlermeldungen nennen den HTTP-Code oder Abbruchgrund.
+- Gemini: Aliase `gemini-flash-latest`, Wiederholungen mit dem sparsameren `gemini-flash-lite-latest` (eigenes Kontingent). Bis zu zwei Wiederholungen bei Überlastung (5xx) oder Limit (429), Wartezeit 2 s, dann 5 s.
+- Groq: Modell `qwen/qwen3.8-27b` (laut Suche das Bildmodell, Llama 4 Scout wurde im Juli 2026 abgeschaltet). Eine Wiederholung nach 3 s. Denk-Abschnitte (`<think>`) und Code-Zäune in der Antwort werden entfernt.
+- Fehlerarten: Limit (429), überlastet (5xx), ungültiger Key (401/403, Gemini 400 mit Key-Hinweis), keine Verbindung (Netzwerk oder CORS), unlesbare Antwort, sonst fehlgeschlagen. Bei jedem Fehler wechselt die Kette zum nächsten Anbieter. Nur ein ungültiger Key wird gemerkt (`invalidKeys`) und in den Einstellungen deutlich angezeigt, bis der Key geändert wird.
+- Mindestabstand je Anbieter (`minIntervalMs`): Gemini 6 s, Groq 2,5 s. Gilt zwischen mehreren Seiten und zwischen schnell aufeinanderfolgenden Scans.
+- Mehrere Seiten pro Scan, Ergebnisse landen in einer Prüftabelle. Darüber steht klein, welcher Anbieter welche Seite erkannt hat.
+- Limits (Stand 2026-10-17, nur aus Drittquellen, die Original-Doku war aus der Arbeitsumgebung nicht erreichbar):
+  - Groq kostenlos: ca. 30 Anfragen/Minute, ca. 250 Anfragen/Tag für `qwen/qwen3.8-27b`. Limits gelten pro Organisation, nicht pro Key.
+  - Gemini kostenlos: Google veröffentlicht keine festen Zahlen mehr. Gemessen wurden laut Drittquellen ca. 10–15 Anfragen/Minute; pro Tag für Flash nur ca. 20, für Flash-Lite ca. 500.
 - Fotos werden auf 1600 px verkleinert, nur im Speicher gehalten und nach der Erkennung verworfen.
 - Gemini-Bedingungen (geprüft 2026-10, Originalseite war aus der Arbeitsumgebung nicht erreichbar): Nutzung ab 18, in EU/CH/UK sehen die Bedingungen für Apps bezahlte Dienste vor, dafür keine Nutzung der Daten zum Training. Entscheidung: wie geplant optional, Hinweis in den Einstellungen, Key erstellt ein Erwachsener.
 
@@ -106,6 +119,8 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Fehlertoleranz: vorläufige Entscheidungen (siehe oben) im Alltag prüfen.
 - Reihenfolge der Lernmodi im Menü (vorläufig: Karteikarte, Multiple Choice, Tippen, Hören und Schreiben, Matching).
 - Gemini-Bedingungen bei Gelegenheit direkt auf ai.google.dev gegenlesen.
+- Groq mit echtem Key testen: Modellname, JSON-Modus mit Bild und ob der Aufruf aus dem Browser erlaubt ist (CORS). Ließ sich aus der Arbeitsumgebung nicht prüfen (api.groq.com gesperrt). Bei CORS-Sperre meldet die Kette „Keine Verbindung" und springt weiter.
+- Groq-Nutzungsbedingungen (Alter, Datennutzung) prüfen.
 - Scan-Qualität bei echten Buchseiten (Lautschrift-Spalte, drei Spalten) beobachten, ggf. `layout.ts` anpassen.
 - Beim nächsten `schema_version`-Sprung: Upgrade-Schritt für alte Export-Dateien in `UPGRADES` (`src/data/exchange.ts`) ergänzen.
 - Server und Anbieter für den späteren Sync.
