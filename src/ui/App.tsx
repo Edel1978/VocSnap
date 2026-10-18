@@ -15,6 +15,7 @@ import { ScanPickPage } from './pages/ScanPickPage'
 import { Splash } from './Splash'
 import { SettingsGroupPage, SettingsPage } from './pages/SettingsPage'
 import { Tour } from './tour/Tour'
+import { UpdateWatcher } from './UpdateWatcher'
 
 const TABS: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: 'Start', icon: 'home' },
@@ -103,6 +104,7 @@ export function App() {
           </nav>
         </div>
         <Tour />
+        <UpdateWatcher />
       </HashRouter>
     </AppProvider>
   )
