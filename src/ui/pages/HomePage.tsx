@@ -5,6 +5,8 @@ import { cardKey, computeStates, isDue } from '../../learn/leitner'
 import { formatDay, isoDay } from '../../learn/dates'
 import { learnedToday, wrongWordIds } from '../../learn/stats'
 import { examDates, loadExam } from '../exam'
+import { loadStats } from '../stats'
+import { StatsBar } from '../StatsBar'
 
 const DIRS: Direction[] = ['to_target', 'to_source']
 import { useApp } from '../AppContext'
@@ -25,8 +27,8 @@ export function HomePage() {
         <p className="mb-3">Leg zuerst ein Profil an. Jedes Profil hat seinen eigenen Lernstand.</p>
         <ProfileForm
           label="Anlegen"
-          onSubmit={async (name) => {
-            const p = await store.createProfile({ name })
+          onSubmit={async (name, avatar) => {
+            const p = await store.createProfile({ name, avatar })
             updateSettings({ activeProfileId: p.id })
             await reloadProfiles()
           }}
@@ -58,23 +60,28 @@ function ProfileHome({ profileId }: { profileId: string }) {
     )
     return {
       exams,
+      stats: await loadStats(store, profileId, settings.dailyGoal),
       lessons: lessons.map((l, i) => ({ lesson: l, count: words[i].length })),
       total: words.flat().length,
       errors,
       due,
       learnedToday: learnedToday(events),
     }
-  }, [store, profileId, intervals])
+  }, [store, profileId, intervals, settings.dailyGoal])
 
   if (data.state === 'loading') return <Loading />
   if (data.state === 'error') return <ErrorBox />
-  const { lessons, total, errors, due, exams } = data.data
+  const { lessons, total, errors, due, exams, stats } = data.data
 
   return (
     <div className="space-y-4">
+      {stats.reviews > 0 && <StatsBar stats={stats} goal={settings.dailyGoal} />}
+
       {total > 0 && !data.data.learnedToday && (
         <p className="rounded-2xl bg-amber-100 p-4 font-medium text-amber-900 dark:bg-amber-950 dark:text-amber-200">
-          Du hast heute noch nicht gelernt. Ein paar Minuten reichen schon!
+          {stats.streak > 0
+            ? `Du hast heute noch nicht gelernt. Lern heute, damit deine Serie von ${stats.streak} ${stats.streak === 1 ? 'Tag' : 'Tagen'} hält!`
+            : 'Du hast heute noch nicht gelernt. Ein paar Minuten reichen schon!'}
         </p>
       )}
 
