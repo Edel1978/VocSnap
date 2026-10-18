@@ -13,7 +13,7 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | E2 Scan | fertig | Foto-Scan mit Tesseract (lokal) und Gemini (Key), Prüftabelle, Beispielsatz und Warnhinweis über Gemini, Foto wird verworfen |
 | E2b Anbieter-Kette | fertig | Gemini → Groq → Tesseract mit automatischem Wechsel, Groq als zweiter Anbieter, mehrere Seiten pro Scan |
 | E3 Lernmodi | fertig | Leitner (5 Fächer, fällige Karten), Multiple Choice, Tippen, Hören und Schreiben, Fehlertoleranz |
-| E4 Klassenarbeit und Matching | offen | |
+| E4 Klassenarbeit und Matching | fertig | Lernplan zum Datum der Arbeit (Tagesplan, Generalprobe), Matching-Spiel |
 | E5 Motivation und Feinschliff | offen | |
 
 Status: offen / in Arbeit / fertig.
@@ -27,6 +27,7 @@ Status: offen / in Arbeit / fertig.
 | E2 | bitte nachtragen | bitte nachtragen |
 | E3 | bitte nachtragen | bitte nachtragen |
 | E2b | bitte nachtragen | bitte nachtragen |
+| E4 | bitte nachtragen | bitte nachtragen |
 
 Der Verbrauch ist in der Sitzung nicht sichtbar und muss in der Abrechnung nachgesehen werden.
 
@@ -34,11 +35,11 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-Stand 2026-10-17 abends: E0 bis E3 und E2b sind fertig, gemergt und online (https://edel1978.github.io/VocSnap/). Scan mit Groq im Alltag getestet und deutlich besser als Gemini.
+Stand 2026-10-18: E0 bis E4 und E2b sind fertig.
 
-1. Verbrauchtes Guthaben für E0 bis E3 und E2b in der Tabelle oben nachtragen und prüfen, ob die 70-%-Grenze erreicht ist.
-2. Sprachausgabe (Hören und Schreiben) auf dem Handy prüfen, vor allem, ob englische und französische Stimmen vorhanden sind.
-3. E4 beginnen (siehe `SPEC.md`, Abschnitt 6). Matching nutzt `batchSize` > 1 der Modus-Schnittstelle.
+1. Verbrauchtes Guthaben für alle Etappen in der Tabelle oben nachtragen und prüfen, ob die 70-%-Grenze erreicht ist. Davon hängt ab, ob E5 noch ganz gebaut wird.
+2. Sprachausgabe (Hören und Schreiben) auf dem Handy prüfen.
+3. E5 beginnen (siehe `SPEC.md`, Abschnitt 6).
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
 
@@ -72,6 +73,10 @@ Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.githu
 | `src/learn/leitner.ts` | Fach und Fälligkeit je Karte (Wort + Richtung), komplett aus Ereignissen berechnet |
 | `src/learn/tolerance.ts` | Bewertung getippter Antworten (richtig / halb / falsch) |
 | `src/learn/choices.ts` | Antwortauswahl für Multiple Choice |
+| `src/learn/examPlan.ts` | Lernplan zur Klassenarbeit aus dem Leitner-Stand |
+| `src/learn/matching.ts`, `src/modes/matching/` | Matching-Spiel (5 Paare pro Runde) |
+| `src/learn/dates.ts` | Lokale Tage, Datumsanzeige |
+| `src/ui/exam.ts`, `src/ui/pages/ExamPages.tsx` | Klassenarbeit laden, planen, anzeigen |
 | `src/modes/choice/`, `typing/`, `listen/`, `shared/` | Lernmodi und gemeinsame Teile (Eingabe, Rückmeldung, Sprachausgabe in `speech.ts`) |
 | `src/modes/modes.ts` | Kennungen und Standard-Reihenfolge der Lernmodi |
 | `src/modes/types.ts`, `registry.ts` | Schnittstelle `LearningMode` und Liste der fertigen Modi |
@@ -100,6 +105,10 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Leitner: Karte = Wort + Richtung. Neue Karten sind Fach 1 und sofort fällig. Fällig, wenn seit der letzten Abfrage (lokaler Kalendertag) mindestens der Abstand des Fachs vergangen ist. Jede Abfrage zählt, auch freies Üben und Fehlerrunden.
 - „Nur fällige Wörter" ist Standard beim normalen Lernen. Bei „Fehler wiederholen" und „Diese Lektion lernen" wird alles abgefragt.
 - Hören und Schreiben: Das gefragte Wort wird vorgelesen statt angezeigt (Richtung wie bei den anderen Modi). Ohne Sprachausgabe wird das Wort angezeigt.
+- Klassenarbeit: keine eigene Tabelle, sondern das vorhandene Feld `exam_date` der Lektionen. Eine Arbeit = alle Lektionen eines Profils mit gleichem Datum. Kein Schema-Wechsel nötig.
+- Lernplan (`planExam`): Karte = Wort + Richtung, beide Richtungen. Neue Karten werden gleichmäßig auf die Tage vor dem letzten Tag verteilt. Die Tagesquote richtet sich nach dem Stand zu Tagesbeginn, damit sie sich beim Lernen nicht verschiebt. Dazu kommen die nach Leitner fälligen Karten. Am letzten Tag vor der Arbeit Generalprobe mit allen Karten, am Tag der Arbeit nur die unsicheren (Fach 1–2). „Sicher" heißt ab Fach 3.
+- „Jetzt lernen" im Plan fragt zuerst die heute noch offenen Karten ab, danach zum Nachüben alle geplanten.
+- Matching: 5 Paare pro Runde, erst links wählen, dann rechts. Ein Fehlversuch macht die Abfrage falsch, sonst richtig. Gleicher Lösungstext zählt als Treffer. Bei „Beide Richtungen" kann dasselbe Wort in beiden Richtungen in einer Runde vorkommen.
 - Fehlertoleranz (offene Punkte aus der SPEC vorläufig so entschieden, änderbar in `tolerance.ts`):
   - Ein Buchstabe daneben ist halb, erst ab drei Buchstaben im Lösungswort.
   - Ein fehlender oder falscher Akzent zählt als ein Buchstabe, also halb. Zwei Akzentfehler sind falsch.
@@ -121,6 +130,7 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 ## Offene Punkte
 
 - Fehlertoleranz: vorläufige Entscheidungen (siehe oben) im Alltag prüfen.
+- Matching: prüfen, ob dasselbe Wort in beiden Richtungen in einer Runde stört (dann pro Runde nur eine Richtung je Wort).
 - Reihenfolge der Lernmodi im Menü (vorläufig: Karteikarte, Multiple Choice, Tippen, Hören und Schreiben, Matching).
 - Gemini-Bedingungen bei Gelegenheit direkt auf ai.google.dev gegenlesen.
 - Groq-Nutzungsbedingungen (Alter, Datennutzung) prüfen.
