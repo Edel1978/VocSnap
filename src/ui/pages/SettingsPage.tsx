@@ -1,4 +1,4 @@
-import { Navigate, useParams } from 'react-router-dom'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { PROVIDERS } from '../../config/providers'
 import { MODES } from '../../modes/modes'
 import type { Settings } from '../../settings/settings'
@@ -15,6 +15,7 @@ import { ProfilesPage } from './ProfilesPage'
 // Übersicht „Mehr": Gruppen statt einer langen Seite.
 export function SettingsPage() {
   const { settings, profile, updateSettings } = useApp()
+  const navigate = useNavigate()
   const chain = settings.providerOrder.filter((p) => !PROVIDERS[p].requiresKey || settings.apiKeys[p]?.trim())
   return (
     <div>
@@ -27,7 +28,7 @@ export function SettingsPage() {
         <ListRow to="/einstellungen/daten" icon="database" color="#10B981" title="Daten" detail="Sichern und wiederherstellen" />
       </div>
       <div className={`${card} animate-pop mt-4 divide-y divide-slate-100 overflow-hidden p-0 dark:divide-slate-800`} style={{ animationDelay: '80ms' }}>
-        <ListRow onClick={() => updateSettings({ onboarded: false })} icon="sparkle" color="#F59E0B" title="Anleitung" detail="So funktioniert VocSnap" />
+        <ListRow onClick={() => restartTour(updateSettings, navigate)} icon="sparkle" color="#F59E0B" title="Anleitung" detail="So funktioniert VocSnap" />
         <ListRow to="/einstellungen/info" icon="info" color="#64748B" title="Über VocSnap" />
       </div>
     </div>
@@ -179,8 +180,15 @@ function LookSettings() {
   )
 }
 
+// Einführung von vorn, auf der Startseite.
+function restartTour(update: (p: Partial<Settings>) => void, navigate: (to: string) => void) {
+  update({ onboarded: false, tour: null })
+  navigate('/')
+}
+
 function About() {
   const { updateSettings } = useApp()
+  const navigate = useNavigate()
   return (
     <>
       <section className={`${card} animate-pop flex flex-col items-center py-6 text-center`}>
@@ -197,7 +205,7 @@ function About() {
           regelmäßig unter „Daten“.
         </p>
       </Section>
-      <button type="button" className={`${button} flex w-full items-center justify-center gap-2 py-3`} onClick={() => updateSettings({ onboarded: false })}>
+      <button type="button" className={`${button} flex w-full items-center justify-center gap-2 py-3`} onClick={() => restartTour(updateSettings, navigate)}>
         <Icon name="sparkle" className="size-5" /> Anleitung ansehen
       </button>
     </>

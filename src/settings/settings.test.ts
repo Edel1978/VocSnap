@@ -64,6 +64,13 @@ describe('Lernvorgaben', () => {
     const s = parseSettings({ learnMode: 'x', learnDirection: 'quer', haptics: 'ja' })
     expect([s.learnMode, s.learnDirection, s.haptics]).toEqual(['flashcard', 'to_target', true])
   })
+
+  it('merkt sich den Stand der Einführung', () => {
+    expect(parseSettings({ tour: { flow: 'full', step: 3 } }).tour).toEqual({ flow: 'full', step: 3 })
+    expect(parseSettings({}).tour).toBeNull()
+    expect(parseSettings({ tour: { flow: 'x', step: 1 } }).tour).toBeNull()
+    expect(parseSettings({ tour: { flow: 'short', step: -1 } }).tour).toBeNull()
+  })
 })
 
 describe('localSettingsStore', () => {

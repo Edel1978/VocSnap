@@ -5,6 +5,11 @@ import { MODE_IDS, type ModeId } from '../modes/modes'
 export type Theme = 'dark' | 'light'
 export type FlashcardConfirm = 'flip' | 'swipe'
 
+export interface TourProgress {
+  flow: 'full' | 'short'
+  step: number
+}
+
 export interface Settings {
   theme: Theme
   flashcardConfirm: FlashcardConfirm
@@ -21,8 +26,10 @@ export interface Settings {
   haptics: boolean
   // Töne bei Antworten und beim Start.
   sounds: boolean
-  // Einführung beim ersten Start gesehen.
+  // Geführte Einführung erledigt oder übersprungen.
   onboarded: boolean
+  // Laufende Einführung: welcher Ablauf und welcher Schritt.
+  tour: TourProgress | null
   // Zuletzt gewählter Lernmodus und Richtung, für „Weiterlernen".
   learnMode: ModeId
   learnDirection: 'to_target' | 'to_source' | 'both'
@@ -41,6 +48,7 @@ export const DEFAULT_SETTINGS: Settings = {
   haptics: true,
   sounds: true,
   onboarded: false,
+  tour: null,
   learnMode: 'flashcard',
   learnDirection: 'to_target',
 }
@@ -81,6 +89,10 @@ export function parseSettings(raw: unknown): Settings {
   if (typeof r.haptics === 'boolean') s.haptics = r.haptics
   if (typeof r.sounds === 'boolean') s.sounds = r.sounds
   if (typeof r.onboarded === 'boolean') s.onboarded = r.onboarded
+  const t = r.tour as Record<string, unknown> | null | undefined
+  if (t && (t.flow === 'full' || t.flow === 'short') && Number.isInteger(t.step) && (t.step as number) >= 0) {
+    s.tour = { flow: t.flow, step: t.step as number }
+  }
   if (MODE_IDS.includes(r.learnMode as ModeId)) s.learnMode = r.learnMode as ModeId
   if (r.learnDirection === 'to_target' || r.learnDirection === 'to_source' || r.learnDirection === 'both') {
     s.learnDirection = r.learnDirection

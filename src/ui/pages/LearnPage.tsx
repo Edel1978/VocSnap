@@ -214,7 +214,7 @@ function Setup(props: {
           {items.length > 0 ? `${items.length} ${items.length === 1 ? 'Abfrage' : 'Abfragen'}` : 'Alles erledigt'}
         </p>
         {items.length > 0 ? (
-          <button type="button" className={`${primary} mt-4 flex w-full items-center justify-center gap-2`} onClick={() => mode && start(mode)}>
+          <button type="button" data-tour="start-round" className={`${primary} mt-4 flex w-full items-center justify-center gap-2`} onClick={() => mode && start(mode)}>
             <Icon name="play" /> {MODES.find((m) => m.id === mode)?.label} starten
           </button>
         ) : (
@@ -398,7 +398,7 @@ function RoundView({
           <button type="button" className={`${button} py-3`} onClick={() => setRound(null)}>
             Neue Runde
           </button>
-          <Link to="/" className={`${button} py-3 text-center`}>
+          <Link to="/" data-tour="round-done" className={`${button} py-3 text-center`}>
             Fertig
           </Link>
         </div>
@@ -433,7 +433,7 @@ function RoundView({
           <span className={`${muted} font-semibold`}>{last === 'wrong' ? 'Nicht schlimm, weiter geht’s!' : last ? 'Weiter so!' : 'Los geht’s!'}</span>
         )}
       </div>
-      <div key={session.index} className="animate-slide">
+      <div key={session.index} data-tour="round" className="animate-slide">
         <mode.Component
           key={`${session.index}-${batch.map((i) => i.word.id + i.direction).join()}`}
           items={batch}
@@ -472,7 +472,7 @@ function Reward(props: { profileId: string; pending: Promise<unknown>[]; saved: 
   if (data.state !== 'ready') return null
   const { xp, levelUp, goal } = data.data
   return (
-    <div className="grid grid-cols-1 gap-2.5">
+    <div data-tour="reward" className="grid grid-cols-1 gap-2.5">
       {(levelUp || goal || props.allCorrect) && xp > 0 && <Confetti />}
       <div className={`${card} animate-pop flex items-center justify-between`}>
         <span className="font-bold text-slate-500">Erfahrung</span>
