@@ -10,9 +10,9 @@ import { LessonPage, NewLessonPage } from './pages/LessonPage'
 import { PasteImportPage } from './pages/PasteImportPage'
 import { ScanPage } from './pages/ScanPage'
 import { ScanPickPage } from './pages/ScanPickPage'
-import { Onboarding } from './Onboarding'
 import { Splash } from './Splash'
 import { SettingsGroupPage, SettingsPage } from './pages/SettingsPage'
+import { Tour } from './tour/Tour'
 
 const TABS: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: 'Start', icon: 'home' },
@@ -57,7 +57,6 @@ export function App() {
   return (
     <AppProvider>
       <Splash />
-      <Onboarding />
       <HashRouter>
         <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <div className="absolute -top-24 -right-20 size-64 rounded-full bg-indigo-200 opacity-50 blur-3xl dark:bg-indigo-900/40" />
@@ -83,7 +82,7 @@ export function App() {
               <Route path="*" element={<HomePage />} />
             </Routes>
           </main>
-          <nav className="fixed inset-x-0 bottom-0 bg-white/90 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-6px_20px_-12px_rgb(79_70_229/0.35)] backdrop-blur dark:bg-slate-900/90">
+          <nav data-tour="nav" className="fixed inset-x-0 bottom-0 bg-white/90 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-6px_20px_-12px_rgb(79_70_229/0.35)] backdrop-blur dark:bg-slate-900/90">
             <div className="mx-auto flex max-w-xl gap-1">
               {TABS.map((t) => (
                 <NavLink key={t.to} to={t.to} end={t.to === '/'} className={tab}>
@@ -94,6 +93,7 @@ export function App() {
             </div>
           </nav>
         </div>
+        <Tour />
       </HashRouter>
     </AppProvider>
   )

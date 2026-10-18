@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { languageColor, languageLabel } from '../../config/languages'
 import type { Direction, Word } from '../../data/types'
+import { exampleWords } from '../../data/examples'
 import { BOXES, boxOf, cardKey, computeStates } from '../../learn/leitner'
 import { useApp } from '../AppContext'
 import { Empty, ErrorBox, Loading, PageTitle, Section } from '../components'
@@ -19,13 +20,15 @@ export function NewLessonPage() {
   if (!profile) return <ErrorBox>Bitte zuerst ein Profil anlegen.</ErrorBox>
   return (
     <Section title="Neue Lektion">
-      <LessonForm
-        submitLabel="Anlegen"
-        onSubmit={async (l) => {
-          const lesson = await store.createLesson({ ...l, profile_id: profile.id })
-          navigate(`/lektion/${lesson.id}`, { replace: true })
-        }}
-      />
+      <div data-tour="lesson-form">
+        <LessonForm
+          submitLabel="Anlegen"
+          onSubmit={async (l) => {
+            const lesson = await store.createLesson({ ...l, profile_id: profile.id })
+            navigate(`/lektion/${lesson.id}`, { replace: true })
+          }}
+        />
+      </div>
     </Section>
   )
 }
@@ -55,6 +58,7 @@ export function LessonPage() {
   if (!lesson) return <ErrorBox>Diese Lektion gibt es nicht mehr.</ErrorBox>
   const color = languageColor(lesson.source_lang)
   const q = query.trim().toLowerCase()
+  const examples = exampleWords(lesson.source_lang, lesson.target_lang)
   const shown = q ? words.filter((w) => `${w.term} ${w.translation}`.toLowerCase().includes(q)) : words
 
   return (
@@ -106,7 +110,7 @@ export function LessonPage() {
             <div className="h-full rounded-full bg-white transition-[width] duration-700" style={{ width: `${safe}%` }} />
           </div>
           {words.length > 0 && (
-            <Link to={`/lernen?lektionen=${lesson.id}`} className={`${primary} mt-4 flex items-center justify-center gap-2`}>
+            <Link to={`/lernen?lektionen=${lesson.id}`} data-tour="learn-lesson" className={`${primary} mt-4 flex items-center justify-center gap-2`}>
               <Icon name="play" /> Diese Lektion lernen
             </Link>
           )}
@@ -120,6 +124,7 @@ export function LessonPage() {
             type="button"
             role="tab"
             aria-selected={tab === t}
+            data-tour={t === 'add' ? 'add-tab' : undefined}
             onClick={() => setTab(t)}
             className={`rounded-xl py-2 text-sm font-bold transition ${
               tab === t ? 'bg-white text-indigo-700 shadow-card dark:bg-slate-900 dark:text-indigo-300' : 'text-slate-500'
@@ -131,7 +136,20 @@ export function LessonPage() {
       </div>
 
       {tab === 'add' ? (
-        <>
+        <div data-tour="add-ways" className="space-y-4">
+          {examples && words.length === 0 && (
+            <button
+              type="button"
+              className={`${button} flex w-full items-center justify-center gap-2 py-3`}
+              onClick={async () => {
+                for (const w of examples) await store.createWord({ ...w, lesson_id: lesson.id })
+                setTab('words')
+                reload()
+              }}
+            >
+              <Icon name="sparkle" className="size-5 text-orange-500" /> Mit Beispielwörtern ausprobieren
+            </button>
+          )}
           <div className="grid grid-cols-2 gap-2">
             <Link to={`/lektion/${lesson.id}/scan`} className={`${button} flex items-center justify-center gap-2 py-3`}>
               <Icon name="camera" className="size-5" /> Foto scannen
@@ -149,7 +167,7 @@ export function LessonPage() {
               }}
             />
           </Section>
-        </>
+        </div>
       ) : words.length === 0 ? (
         <Empty title="Noch keine Wörter" text="Scanne eine Seite, füge Text ein oder trag Wörter von Hand ein.">
           <button type="button" className={`${primary} w-full`} onClick={() => setTab('add')}>

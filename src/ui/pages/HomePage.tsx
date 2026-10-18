@@ -125,13 +125,13 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
         })}
       </p>
 
-      <section className="relative animate-pop rounded-[28px] bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 p-5 text-white shadow-[0_14px_30px_-12px_rgb(79_70_229/0.7)]">
+      <section data-tour="hero" className="relative animate-pop rounded-[28px] bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 p-5 text-white shadow-[0_14px_30px_-12px_rgb(79_70_229/0.7)]">
         <Mascot mood={mood} className="absolute -top-7 right-1 w-28 drop-shadow-lg" />
         {total === 0 ? (
           <>
             <p className="text-xs font-extrabold tracking-widest text-indigo-200 uppercase">Los geht's</p>
             <p className="mt-1 max-w-[65%] font-display text-2xl leading-tight font-bold">Leg deine erste Lektion an</p>
-            <Link to="/lektion/neu" className={`${primary} mt-4 flex items-center justify-center gap-2`}>
+            <Link to="/lektion/neu" data-tour="new-lesson" className={`${primary} mt-4 flex items-center justify-center gap-2`}>
               <Icon name="plus" /> Neue Lektion
             </Link>
           </>
@@ -158,7 +158,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
         )}
       </section>
 
-      <Link to="/erfolge" className="grid grid-cols-3 gap-2.5" aria-label="Erfolge anzeigen">
+      <Link to="/erfolge" data-tour="stats" className="grid grid-cols-3 gap-2.5" aria-label="Erfolge anzeigen">
         <div className={`${tile} relative px-3 py-2.5`} style={{ animationDelay: '60ms' }}>
           <Icon name="flame" className="absolute top-2.5 right-2.5 size-5 text-orange-500" />
           <b className="font-display text-2xl leading-none">{stats.streak}</b>
@@ -237,7 +237,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
       )}
 
       {lessons.length > 0 && (
-        <section>
+        <section data-tour="lessons">
           <h2 className="mb-2.5 text-xl font-semibold">Deine Lektionen</h2>
           <ul className="space-y-2.5">
             {lessons.map(({ lesson, count, safe }, i) => {
