@@ -80,6 +80,17 @@ describe('Löschen mit Abhängigkeiten', () => {
     expect((await db.words.get(w.id))?.deleted_at).not.toBeNull()
   })
 
+  it('legt mehrere Wörter auf einmal an', async () => {
+    const p = await store.createProfile({ name: 'P' })
+    const l = await store.createLesson({ profile_id: p.id, title: 'L', source_lang: 'en', target_lang: 'de' })
+    const words = await store.createWords([
+      { lesson_id: l.id, term: 'a', translation: 'b' },
+      { lesson_id: l.id, term: 'c', translation: 'd' },
+    ])
+    expect(new Set(words.map((w) => w.id)).size).toBe(2)
+    expect((await store.listWords(l.id)).map((w) => w.term).sort()).toEqual(['a', 'c'])
+  })
+
   it('Profil löschen markiert Lektionen und Wörter mit', async () => {
     const p = await store.createProfile({ name: 'P' })
     const l = await store.createLesson({ profile_id: p.id, title: 'L', source_lang: 'en', target_lang: 'de' })

@@ -28,16 +28,16 @@ export function ReviewList(props: {
     setBusy(true)
     setError(false)
     try {
-      for (const r of valid) {
-        await store.createWord({
+      await store.createWords(
+        valid.map((r) => ({
           lesson_id: props.lessonId,
           term: r.term.trim(),
           translation: r.translation.trim(),
           example_sentence: r.example_sentence?.trim() ?? '',
           warning_note: r.warning_note?.trim() ?? '',
           word_type: r.word_type?.trim() ?? '',
-        })
-      }
+        })),
+      )
       props.onSaved()
     } catch {
       setError(true)

@@ -41,6 +41,8 @@ export function LessonPage() {
   const [editingWord, setEditingWord] = useState<string | null>(null)
   const [tab, setTab] = useState<'words' | 'add'>('words')
   const [query, setQuery] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const [data, reload] = useAsync(async () => {
     const lesson = await store.getLesson(id)
     const words = lesson ? await store.listWords(id) : []
@@ -141,15 +143,24 @@ export function LessonPage() {
             <button
               type="button"
               className={`${button} flex w-full items-center justify-center gap-2 py-3`}
+              disabled={busy}
               onClick={async () => {
-                for (const w of examples) await store.createWord({ ...w, lesson_id: lesson.id })
-                setTab('words')
-                reload()
+                setBusy(true)
+                try {
+                  await store.createWords(examples.map((w) => ({ ...w, lesson_id: lesson.id })))
+                  setTab('words')
+                  reload()
+                } catch {
+                  setSaveError(true)
+                } finally {
+                  setBusy(false)
+                }
               }}
             >
               <Icon name="sparkle" className="size-5 text-orange-500" /> Mit Beispielwörtern ausprobieren
             </button>
           )}
+          {saveError && <ErrorBox>Die Beispielwörter konnten nicht gespeichert werden.</ErrorBox>}
           <div className="grid grid-cols-2 gap-2">
             <Link to={`/lektion/${lesson.id}/scan`} className={`${button} flex items-center justify-center gap-2 py-3`}>
               <Icon name="camera" className="size-5" /> Foto scannen

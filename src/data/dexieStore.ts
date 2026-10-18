@@ -92,17 +92,18 @@ export class DexieStore implements Store {
   getWord(id: string) {
     return this.get(this.db.words, id)
   }
+  private wordRow(input: Parameters<Store['createWord']>[0]): Word {
+    return { example_sentence: '', warning_note: '', word_type: '', image: null, ...input, ...this.meta() }
+  }
   async createWord(input: Parameters<Store['createWord']>[0]) {
-    const row: Word = {
-      example_sentence: '',
-      warning_note: '',
-      word_type: '',
-      image: null,
-      ...input,
-      ...this.meta(),
-    }
+    const row = this.wordRow(input)
     await this.db.words.add(row)
     return row
+  }
+  async createWords(inputs: Parameters<Store['createWords']>[0]) {
+    const rows = inputs.map((i) => this.wordRow(i))
+    await this.db.transaction('rw', this.db.words, () => this.db.words.bulkAdd(rows))
+    return rows
   }
   updateWord(id: string, patch: Parameters<Store['updateWord']>[1]) {
     return this.update(this.db.words, id, patch)
