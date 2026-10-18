@@ -53,7 +53,7 @@ export function DataSection() {
   }
 
   return (
-    <Section title="Daten">
+    <Section title="Sichern und wiederherstellen">
       <p className={`${muted} mb-3`}>
         Sicherung als Datei. Beim Import werden Daten zusammengeführt, nichts wird gelöscht. Neuere Änderungen gewinnen.
       </p>

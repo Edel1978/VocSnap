@@ -24,7 +24,7 @@ export function ProviderSection() {
     })
 
   return (
-    <Section title="Texterkennung">
+    <Section title="Reihenfolge der Anbieter">
       <p className={`${muted} mb-3`}>
         Beim Scan wird der Reihe nach probiert. Fällt ein Anbieter aus, übernimmt automatisch der nächste. Ohne Key wird
         ein Anbieter übersprungen. Keys bleiben nur auf diesem Gerät.

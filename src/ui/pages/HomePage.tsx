@@ -5,6 +5,7 @@ import { addDays, formatDay, isoDay } from '../../learn/dates'
 import { cardKey, computeStates, dayNumber, isDue } from '../../learn/leitner'
 import { directionsOf } from '../../learn/session'
 import { wrongWordIds } from '../../learn/stats'
+import { snappySays } from '../../learn/tips'
 import { useApp } from '../AppContext'
 import { ErrorBox, Loading, StorageError } from '../components'
 import { examDates, loadExam } from '../exam'
@@ -103,13 +104,25 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
           <h1 className="text-3xl font-semibold">Hallo {name}!</h1>
         </div>
         <Link
-          to="/profile"
+          to="/einstellungen/profil"
           aria-label="Profile"
           className="flex size-12 items-center justify-center rounded-full bg-orange-100 text-2xl shadow-[0_0_0_3px_#fff,0_4px_12px_rgb(79_70_229/0.2)] dark:bg-slate-800 dark:shadow-none"
         >
           {avatar || '🙂'}
         </Link>
       </header>
+
+      <p className="relative ml-auto w-fit max-w-[78%] animate-pop rounded-2xl rounded-br-sm bg-white px-3.5 py-2 text-sm font-semibold shadow-card dark:bg-slate-900 dark:shadow-card-dark">
+        {snappySays({
+          words: total,
+          due,
+          todayWords: stats.todayWords,
+          goal,
+          streak: stats.streak,
+          yesterdayKnown: stats.yesterdayWords,
+          hour: today.getHours(),
+        })}
+      </p>
 
       <section className="relative animate-pop rounded-[28px] bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 p-5 text-white shadow-[0_14px_30px_-12px_rgb(79_70_229/0.7)]">
         <Mascot mood={mood} className="absolute -top-7 right-1 w-28 drop-shadow-lg" />

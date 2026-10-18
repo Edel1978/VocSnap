@@ -1,48 +1,70 @@
+import { Navigate, useParams } from 'react-router-dom'
+import { PROVIDERS } from '../../config/providers'
 import { MODES } from '../../modes/modes'
 import type { Settings } from '../../settings/settings'
 import { useApp } from '../AppContext'
-import { Section } from '../components'
+import { Choice, ListRow, PageTitle, Section, Toggle } from '../components'
 import { DataSection } from '../DataSection'
+import { Icon } from '../icons'
+import { Logo } from '../Logo'
 import { NumberField } from '../NumberField'
 import { ProviderSection } from '../ProviderSection'
-import { button, input } from '../ui'
+import { button, card, input, muted } from '../ui'
+import { ProfilesPage } from './ProfilesPage'
 
-function Choice<T extends string>({
-  value,
-  options,
-  onChange,
-}: {
-  value: T
-  options: { value: T; label: string }[]
-  onChange: (v: T) => void
-}) {
+// Übersicht „Mehr": Gruppen statt einer langen Seite.
+export function SettingsPage() {
+  const { settings, profile } = useApp()
+  const chain = settings.providerOrder.filter((p) => !PROVIDERS[p].requiresKey || settings.apiKeys[p]?.trim())
   return (
-    <div className="flex gap-2">
-      {options.map((o) => (
-        <button
-          key={o.value}
-          type="button"
-          onClick={() => onChange(o.value)}
-          className={`flex-1 rounded-lg px-3 py-2 text-sm font-medium ${
-            value === o.value ? 'bg-indigo-600 text-white' : 'bg-slate-200 dark:bg-slate-800'
-          }`}
-        >
-          {o.label}
-        </button>
-      ))}
+    <div>
+      <PageTitle title="Mehr" />
+      <div className={`${card} animate-pop divide-y divide-slate-100 overflow-hidden p-0 dark:divide-slate-800`}>
+        <ListRow to="/einstellungen/profil" icon="user" color="#F97316" title="Profil" detail={profile ? `${profile.avatar} ${profile.name}` : undefined} />
+        <ListRow to="/einstellungen/lernen" icon="sliders" color="#6366F1" title="Lernen" detail={`Tagesziel ${settings.dailyGoal} · Karteikarten: ${settings.flashcardConfirm === 'flip' ? 'Umdrehen' : 'Swipe'}`} />
+        <ListRow to="/einstellungen/scan" icon="camera" color="#0EA5E9" title="Foto-Scan" detail={chain.map((p) => PROVIDERS[p].label).join(' → ')} />
+        <ListRow to="/einstellungen/darstellung" icon="palette" color="#EC4899" title="Darstellung" detail={`${settings.theme === 'dark' ? 'Dunkel' : 'Hell'} · Töne ${settings.sounds ? 'an' : 'aus'} · Vibration ${settings.haptics ? 'an' : 'aus'}`} />
+        <ListRow to="/einstellungen/daten" icon="database" color="#10B981" title="Daten" detail="Sichern und wiederherstellen" />
+      </div>
+      <div className={`${card} animate-pop mt-4 divide-y divide-slate-100 overflow-hidden p-0 dark:divide-slate-800`} style={{ animationDelay: '80ms' }}>
+        <ListRow to="/einstellungen/info" icon="info" color="#64748B" title="Über VocSnap" />
+      </div>
     </div>
   )
 }
 
-export function SettingsPage() {
-  const { settings, updateSettings } = useApp()
+const TITLES: Record<string, string> = {
+  profil: 'Profil',
+  lernen: 'Lernen',
+  scan: 'Foto-Scan',
+  darstellung: 'Darstellung',
+  daten: 'Daten',
+  info: 'Über VocSnap',
+}
 
+export function SettingsGroupPage() {
+  const { group = '' } = useParams()
+  if (!TITLES[group]) return <Navigate to="/einstellungen" replace />
+  return (
+    <div className="space-y-4">
+      <PageTitle title={TITLES[group]} back="/einstellungen" />
+      {group === 'profil' && <ProfilesPage />}
+      {group === 'lernen' && <LearnSettings />}
+      {group === 'scan' && <ProviderSection />}
+      {group === 'darstellung' && <LookSettings />}
+      {group === 'daten' && <DataSection />}
+      {group === 'info' && <About />}
+    </div>
+  )
+}
+
+function LearnSettings() {
+  const { settings, updateSettings } = useApp()
   const move = (i: number, d: -1 | 1) => {
     const order = [...settings.modeOrder]
     ;[order[i], order[i + d]] = [order[i + d], order[i]]
     updateSettings({ modeOrder: order })
   }
-
   const setLeitnerDays = (i: number, n: number) => {
     const next = [...settings.leitnerIntervals]
     next[i] = n
@@ -50,30 +72,17 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <DataSection />
-
-      <Section title="Design">
-        <Choice<Settings['theme']>
-          value={settings.theme}
-          options={[
-            { value: 'dark', label: 'Dunkel' },
-            { value: 'light', label: 'Hell' },
-          ]}
-          onChange={(theme) => updateSettings({ theme })}
-        />
-      </Section>
-
-      <Section title="Vibration">
-        <Choice<'on' | 'off'>
-          value={settings.haptics ? 'on' : 'off'}
-          options={[
-            { value: 'on', label: 'An' },
-            { value: 'off', label: 'Aus' },
-          ]}
-          onChange={(v) => updateSettings({ haptics: v === 'on' })}
-        />
-        <p className="mt-2 text-sm text-slate-500">Kurzes Vibrieren bei Antworten. Funktioniert auf Android, nicht auf dem iPhone.</p>
+    <>
+      <Section title="Tagesziel">
+        <label className="flex items-center gap-3">
+          <NumberField
+            className={`${input} w-24 text-center font-bold`}
+            aria-label="Tagesziel"
+            value={settings.dailyGoal}
+            onChange={(dailyGoal) => updateSettings({ dailyGoal })}
+          />
+          <span>gewusste Vokabeln pro Tag</span>
+        </label>
       </Section>
 
       <Section title="Karteikarten">
@@ -85,30 +94,19 @@ export function SettingsPage() {
           ]}
           onChange={(flashcardConfirm) => updateSettings({ flashcardConfirm })}
         />
-        <p className="mt-2 text-sm text-slate-500">
+        <p className={`${muted} mt-2`}>
           {settings.flashcardConfirm === 'flip'
             ? 'Karte umdrehen und selbst bewerten.'
             : 'Rechts wischen = gewusst, links = nicht gewusst.'}
         </p>
       </Section>
 
-      <Section title="Tagesziel">
-        <label className="flex items-center gap-3">
-          <NumberField
-            className={`${input} w-24`}
-            aria-label="Tagesziel"
-            value={settings.dailyGoal}
-            onChange={(dailyGoal) => updateSettings({ dailyGoal })}
-          />
-          <span>gewusste Vokabeln pro Tag</span>
-        </label>
-      </Section>
-
       <Section title="Reihenfolge der Lernmodi">
         <ol className="space-y-2">
           {settings.modeOrder.map((id, i) => (
             <li key={id} className="flex items-center gap-2">
-              <span className="flex-1">{MODES.find((m) => m.id === id)?.label}</span>
+              <span className="w-5 text-sm font-bold text-slate-400">{i + 1}</span>
+              <span className="flex-1 font-semibold">{MODES.find((m) => m.id === id)?.label}</span>
               <button type="button" className={button} disabled={i === 0} onClick={() => move(i, -1)} aria-label="nach oben">
                 ↑
               </button>
@@ -127,9 +125,10 @@ export function SettingsPage() {
       </Section>
 
       <Section title="Wiederholung (Tage je Fach)">
+        <p className={`${muted} mb-3`}>Nach wie vielen Tagen ein Wort im jeweiligen Fach wieder drankommt.</p>
         <div className="grid grid-cols-5 gap-2">
           {settings.leitnerIntervals.map((d, i) => (
-            <label key={i} className="text-center text-xs text-slate-500">
+            <label key={i} className="text-center text-xs font-bold text-slate-500">
               Fach {i + 1}
               <NumberField
                 className={`${input} mt-1 px-1 text-center`}
@@ -141,8 +140,65 @@ export function SettingsPage() {
           ))}
         </div>
       </Section>
+    </>
+  )
+}
 
-      <ProviderSection />
-    </div>
+function LookSettings() {
+  const { settings, updateSettings } = useApp()
+  return (
+    <>
+      <Section title="Design">
+        <Choice<Settings['theme']>
+          value={settings.theme}
+          options={[
+            { value: 'light', label: 'Hell' },
+            { value: 'dark', label: 'Dunkel' },
+          ]}
+          onChange={(theme) => updateSettings({ theme })}
+        />
+      </Section>
+      <Section title="Rückmeldung">
+        <div className="space-y-3">
+          <Toggle
+            label="Töne"
+            hint="Bei Antworten, Erfolgen und beim Start der App."
+            checked={settings.sounds}
+            onChange={(sounds) => updateSettings({ sounds })}
+          />
+          <Toggle
+            label="Vibration"
+            hint="Kurzes Vibrieren bei Antworten. Nur auf Android, nicht auf dem iPhone."
+            checked={settings.haptics}
+            onChange={(haptics) => updateSettings({ haptics })}
+          />
+        </div>
+      </Section>
+    </>
+  )
+}
+
+function About() {
+  const { updateSettings } = useApp()
+  return (
+    <>
+      <section className={`${card} animate-pop flex flex-col items-center py-6 text-center`}>
+        <Logo className="size-20 drop-shadow-lg" />
+        <p className="mt-3 font-display text-3xl font-bold">
+          Voc<span className="text-orange-500">Snap</span>
+        </p>
+        <p className={muted}>Fotografieren. Lernen. Können.</p>
+      </section>
+      <Section title="Deine Daten">
+        <p className={muted}>
+          Alles bleibt auf diesem Gerät, es gibt kein Konto und keinen Server. Fotos werden nach der Erkennung verworfen.
+          Beim Scan mit Gemini oder Groq wird das Foto zur Erkennung an den Anbieter gesendet. Sichere deine Daten
+          regelmäßig unter „Daten“.
+        </p>
+      </Section>
+      <button type="button" className={`${button} flex w-full items-center justify-center gap-2 py-3`} onClick={() => updateSettings({ onboarded: false })}>
+        <Icon name="sparkle" className="size-5" /> Einführung noch einmal zeigen
+      </button>
+    </>
   )
 }
