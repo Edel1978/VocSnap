@@ -56,8 +56,8 @@ describe('Anbieter-Reihenfolge', () => {
 
 describe('Lernvorgaben', () => {
   it('merkt sich Modus, Richtung und Vibration', () => {
-    const s = parseSettings({ learnMode: 'typing', learnDirection: 'both', haptics: false })
-    expect([s.learnMode, s.learnDirection, s.haptics]).toEqual(['typing', 'both', false])
+    const s = parseSettings({ learnMode: 'typing', learnDirection: 'both', haptics: false, sounds: false, onboarded: true })
+    expect([s.learnMode, s.learnDirection, s.haptics, s.sounds, s.onboarded]).toEqual(['typing', 'both', false, false, true])
   })
 
   it('verwirft Unbekanntes', () => {

@@ -19,6 +19,10 @@ export interface Settings {
   activeProfileId: string | null
   // Vibration bei Antworten (nur wo das Gerät es kann).
   haptics: boolean
+  // Töne bei Antworten und beim Start.
+  sounds: boolean
+  // Einführung beim ersten Start gesehen.
+  onboarded: boolean
   // Zuletzt gewählter Lernmodus und Richtung, für „Weiterlernen".
   learnMode: ModeId
   learnDirection: 'to_target' | 'to_source' | 'both'
@@ -35,6 +39,8 @@ export const DEFAULT_SETTINGS: Settings = {
   invalidKeys: [],
   activeProfileId: null,
   haptics: true,
+  sounds: true,
+  onboarded: false,
   learnMode: 'flashcard',
   learnDirection: 'to_target',
 }
@@ -73,6 +79,8 @@ export function parseSettings(raw: unknown): Settings {
   }
   if (typeof r.activeProfileId === 'string') s.activeProfileId = r.activeProfileId
   if (typeof r.haptics === 'boolean') s.haptics = r.haptics
+  if (typeof r.sounds === 'boolean') s.sounds = r.sounds
+  if (typeof r.onboarded === 'boolean') s.onboarded = r.onboarded
   if (MODE_IDS.includes(r.learnMode as ModeId)) s.learnMode = r.learnMode as ModeId
   if (r.learnDirection === 'to_target' || r.learnDirection === 'to_source' || r.learnDirection === 'both') {
     s.learnDirection = r.learnDirection
