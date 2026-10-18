@@ -15,7 +15,8 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | E3 Lernmodi | fertig | Leitner (5 Fächer, fällige Karten), Multiple Choice, Tippen, Hören und Schreiben, Fehlertoleranz |
 | E4 Klassenarbeit und Matching | fertig | Lernplan zum Datum der Arbeit (Tagesplan, Generalprobe), Matching-Spiel |
 | R1 Redesign Stil A3 | fertig | Farbschema, Schriften, Snappy, Startseite, Logo 4a, Start-Animation |
-| R2 Seiten und Extras | in Arbeit | Lernen, Erfolge, Mehr, Lektion neu; Snappy-Tipps, Einführung, Töne, leere Zustände. Wartet auf Freigabe durch den Nutzer |
+| R2 Seiten und Extras | fertig | Lernen, Erfolge, Mehr, Lektion neu; Snappy-Tipps, Einführung, Töne, leere Zustände |
+| R3 Belohnungen und Anleitung | in Arbeit | Neue Level-Kurve mit Rängen, Abzeichen in Stufen, Streak-Schutz, „Tippen für Ton“ beim Start, ausführliche Anleitung. Wartet auf Freigabe durch den Nutzer |
 | E5 Motivation und Feinschliff | fertig | XP, Level, Streak, Tagesziel, Abzeichen, Bestenliste, Konfetti, Avatare, App-Icons, Offline (PWA), Navigation mit Icons |
 
 Status: offen / in Arbeit / fertig.
@@ -31,6 +32,7 @@ Status: offen / in Arbeit / fertig.
 | E2b | bitte nachtragen | bitte nachtragen |
 | E4 | ca. 26 % (ca. 26 $, gesamt seit E0) | ca. 74 % (ca. 73 $) |
 | E5 | bitte nachtragen | bitte nachtragen |
+| R1–R3 | bitte nachtragen | bitte nachtragen |
 
 Der Verbrauch ist in der Sitzung nicht sichtbar und muss in der Abrechnung nachgesehen werden.
 
@@ -38,9 +40,9 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-Stand 2026-10-18: R2 ist gebaut und gepusht, der Nutzer prüft die Screenshots. Pull Request erst nach seiner Freigabe.
+Stand 2026-10-18: R3 ist gebaut und gepusht, der Nutzer prüft die Screenshots. Pull Request erst nach seiner Freigabe.
 
-1. Rückmeldung zu R2 einarbeiten, dann Pull Request.
+1. Rückmeldung zu R3 einarbeiten, dann Pull Request.
 2. Verbrauchtes Guthaben nach E5 und dem Redesign nachtragen.
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
@@ -119,11 +121,12 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Lernplan (`planExam`): Karte = Wort + Richtung, beide Richtungen. Neue Karten werden gleichmäßig auf die Tage vor dem letzten Tag verteilt. Die Tagesquote richtet sich nach dem Stand zu Tagesbeginn, damit sie sich beim Lernen nicht verschiebt. Dazu kommen die nach Leitner fälligen Karten. Am letzten Tag vor der Arbeit Generalprobe mit allen Karten, am Tag der Arbeit nur die unsicheren (Fach 1–2). „Sicher" heißt ab Fach 3.
 - „Jetzt lernen" im Plan fragt zuerst die heute noch offenen Karten ab, danach zum Nachüben alle geplanten.
 - Matching: 5 Paare pro Runde, erst links wählen, dann rechts. Ein Fehlversuch macht die Abfrage falsch, sonst richtig. Gleicher Lösungstext zählt als Treffer. Bei „Beide Richtungen" kann dasselbe Wort in beiden Richtungen in einer Runde vorkommen.
-- XP: richtig 10, halb 5, falsch 1. Level n ab 50 · (n−1)² XP (Level 2 ab 50, 3 ab 200, 4 ab 450 …).
-- Streak: Tage in Folge mit mindestens einer Abfrage. Zählt bis gestern weiter, solange heute noch gelernt werden kann.
+- XP: richtig 10, halb 5, falsch 1. Bonus: +50 je Tag mit erreichtem Tagesziel, +20 je fehlerfreier Runde (mindestens 10 Abfragen, keine falsch). Runden werden nicht gespeichert, sondern aus den Ereignissen geschätzt: gleicher Modus, höchstens 5 Minuten Pause. Der Tagesziel-Bonus richtet sich nach dem aktuellen Tagesziel; wer es erhöht, kann rückwirkend XP verlieren.
+- Level: Schritt von n nach n+1 kostet 30 · n^1,8 XP (auf 10 gerundet). Level 2 ab 30, 3 ab 130, 5 ab 710, 10 ab 5840, 20 ab 43 840. Ränge: Neuling (1), Entdecker (5), Wortsammler (10), Sprachprofi (15), Meister (20), Legende (30).
+- Streak: Tage in Folge mit mindestens einer Abfrage. Zählt bis gestern weiter, solange heute noch gelernt werden kann. Streak-Schutz: höchstens 2 verpasste Tage in jedem 30-Tage-Fenster werden automatisch überbrückt (zählen nicht mit). Eine Lücke wird nur überbrückt, wenn alle ihre Tage hineinpassen, sonst reißt die Serie, ohne Schutztage zu verbrauchen. Schutztage erscheinen blau in Wochenleiste und Lern-Kalender.
 - Tagesziel: verschiedene Wörter pro Tag, die richtig oder halb richtig beantwortet wurden (Einstellung „gewusste Vokabeln pro Tag"). Falsche Antworten zählen nicht, halten aber die Streak.
 - Zahlenfelder in den Einstellungen (`NumberField`) lassen sich beim Tippen leeren, ungültige Werte springen beim Verlassen zurück.
-- Abzeichen werden nur aus Kennzahlen berechnet, nicht gespeichert (passt zum Prinzip „Lernstand aus Ereignissen").
+- Abzeichen werden nur aus Kennzahlen berechnet, nicht gespeichert (passt zum Prinzip „Lernstand aus Ereignissen"). Stufen Bronze/Silber/Gold/Diamant: Abfragen 100/500/2000/10 000, Tage in Folge 3/7/30/100, Tagesziel 1/10/50/150, Level 5/10/20/30, Karten in Fach 5 1/50/250/1000, Wörter angelegt 20/100/500/2000, fehlerfreie Runden 1/10/50/200; einstufig: alle 5 Lernmodi. Geheim (erst nach Erreichen sichtbar): vor 7 Uhr, nach 22 Uhr, Comeback nach über 7 Tagen Pause, Arbeit gut vorbereitet (jedes Wort vor dem Tag der Arbeit geübt).
 - Bestenliste: alle Profile des Geräts, wahlweise XP der letzten 7 Tage oder gesamt. Erscheint ab zwei Profilen.
 - Belohnung am Rundenende: XP der Runde, Level-Aufstieg, „Tagesziel geschafft". Konfetti bei Level-Aufstieg, erreichtem Tagesziel oder fehlerfreier Runde. Entfällt bei „Bewegung reduzieren".
 - Avatare: Emoji als Platzhalter (Feld `avatar` im Profil).
@@ -141,8 +144,8 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Erfolge: Level-Ring, Kennzahlen, Lern-Kalender (12 Wochen, Abfragen pro Tag), Abzeichen mit Fortschritt, Bestenliste als Podest.
 - Lektion: farbiger Kopf in Sprachfarbe, Reiter „Wörter"/„Hinzufügen", Suche, Punkte je Wort = Fach (schwächere Richtung).
 - Snappy-Tipps (`src/learn/tips.ts`): Sprechblase auf der Startseite je nach Tagesziel, Serie, gestern und Uhrzeit.
-- Einführung (3 Bilder) beim ersten Start, erneut über „Über VocSnap".
-- Töne per Web Audio (keine Dateien): Start-Melodie mit Auslöser-Klick, Töne bei richtig/halb/falsch und Erfolg. Abschaltbar unter Darstellung. Browser spielen Ton oft erst nach einer Berührung, beim Start klappt es vor allem in der installierten App auf Android.
+- Anleitung (8 Schritte: Lektion, Foto-Scan, Lernmodi, Fächer, Klassenarbeit, Erfolge, Daten) beim ersten Start, erneut über „Mehr → Anleitung" oder „Über VocSnap".
+- Töne per Web Audio (keine Dateien): Start-Melodie mit Auslöser-Klick, Töne bei richtig/halb/falsch und Erfolg. Abschaltbar unter Darstellung. Browser spielen Ton oft erst nach einer Berührung (z. B. Samsung). Ist der Ton gesperrt, zeigt der Startbildschirm „Tippen für Ton"; der gesperrte Audio-Kontext wird verworfen, damit die Melodie nicht später unpassend erklingt.
 - Fehlertoleranz (offene Punkte aus der SPEC vorläufig so entschieden, änderbar in `tolerance.ts`):
   - Ein Buchstabe daneben ist halb, erst ab drei Buchstaben im Lösungswort.
   - Ein fehlender oder falscher Akzent zählt als ein Buchstabe, also halb. Zwei Akzentfehler sind falsch.
