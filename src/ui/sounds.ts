@@ -1,7 +1,7 @@
 import type { ReviewResult } from '../data/types'
 
 // Töne werden im Browser erzeugt (Web Audio), keine Dateien, offline nutzbar.
-// Viele Browser erlauben Ton erst nach einer Berührung. Der Startbildschirm bietet dann „Tippen für Ton“ an.
+// Viele Browser erlauben Ton erst nach einer Berührung, dann bleibt der Start still.
 let enabled = true
 let ctx: AudioContext | null = null
 
@@ -14,11 +14,6 @@ function audio(): AudioContext | null {
   ctx ??= new AudioContext()
   if (ctx.state === 'suspended') void ctx.resume().catch(() => {})
   return ctx
-}
-
-// Sperrt der Browser den Ton gerade (noch keine Berührung)?
-export function soundBlocked(): boolean {
-  return enabled && ctx?.state === 'suspended'
 }
 
 // Gesperrten Kontext verwerfen, sonst erklingen vorgemerkte Töne erst bei der nächsten Berührung.
@@ -61,10 +56,10 @@ function click(start: number): void {
 }
 
 export const sound = {
-  // Start der App: Klick beim Einrasten des Rings (snapAt Sekunden), dann aufsteigende Melodie.
-  intro: (snapAt = 0.98) => {
-    click(snapAt)
-    ;[523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, snapAt + 0.12 + i * 0.09, 0.35, 'triangle', 0.14))
+  // Start der App: Klick beim Einrasten des Rings, dann aufsteigende Melodie.
+  intro: () => {
+    click(0.98)
+    ;[523.25, 659.25, 783.99, 1046.5].forEach((f, i) => tone(f, 1.1 + i * 0.09, 0.35, 'triangle', 0.14))
   },
   result: (r: ReviewResult) => {
     if (r === 'correct') {

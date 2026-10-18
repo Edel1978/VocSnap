@@ -145,7 +145,7 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Lektion: farbiger Kopf in Sprachfarbe, Reiter „Wörter"/„Hinzufügen", Suche, Punkte je Wort = Fach (schwächere Richtung).
 - Snappy-Tipps (`src/learn/tips.ts`): Sprechblase auf der Startseite je nach Tagesziel, Serie, gestern und Uhrzeit.
 - Anleitung (8 Schritte: Lektion, Foto-Scan, Lernmodi, Fächer, Klassenarbeit, Erfolge, Daten) beim ersten Start, erneut über „Mehr → Anleitung" oder „Über VocSnap".
-- Töne per Web Audio (keine Dateien): Start-Melodie mit Auslöser-Klick, Töne bei richtig/halb/falsch und Erfolg. Abschaltbar unter Darstellung. Browser spielen Ton oft erst nach einer Berührung (z. B. Samsung). Ist der Ton gesperrt, zeigt der Startbildschirm „Tippen für Ton"; der gesperrte Audio-Kontext wird verworfen, damit die Melodie nicht später unpassend erklingt.
+- Töne per Web Audio (keine Dateien): Start-Melodie mit Auslöser-Klick, Töne bei richtig/halb/falsch und Erfolg. Abschaltbar unter Darstellung. Browser spielen Ton oft erst nach einer Berührung (z. B. Samsung). Ist der Ton gesperrt, bleibt der Start still (Wunsch des Nutzers, kein Knopf). Der gesperrte Audio-Kontext wird verworfen, damit die Melodie nicht später unpassend erklingt.
 - Fehlertoleranz (offene Punkte aus der SPEC vorläufig so entschieden, änderbar in `tolerance.ts`):
   - Ein Buchstabe daneben ist halb, erst ab drei Buchstaben im Lösungswort.
   - Ein fehlender oder falscher Akzent zählt als ein Buchstabe, also halb. Zwei Akzentfehler sind falsch.
