@@ -1,5 +1,6 @@
-import { useState, type FormEvent } from 'react'
+import { useRef, useState, type FormEvent } from 'react'
 import type { WordInput } from '../data/types'
+import { ErrorBox } from './components'
 import { button, input, primary } from './ui'
 
 export type WordFields = Pick<WordInput, 'term' | 'translation'> &
@@ -16,6 +17,8 @@ export function WordForm(props: {
   const [w, setW] = useState<WordFields>(props.initial ?? EMPTY)
   const [more, setMore] = useState(Boolean(props.initial?.example_sentence || props.initial?.warning_note || props.initial?.word_type))
   const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
+  const termRef = useRef<HTMLInputElement>(null)
   const set = (k: keyof WordFields) => (e: { target: { value: string } }) => setW({ ...w, [k]: e.target.value })
   const valid = w.term.trim() && w.translation.trim()
 
@@ -23,10 +26,16 @@ export function WordForm(props: {
     e.preventDefault()
     if (!valid) return
     setBusy(true)
+    setFailed(false)
     try {
       const clean = Object.fromEntries(Object.entries(w).map(([k, v]) => [k, v.trim()])) as WordFields
       await props.onSubmit(clean)
-      if (!props.initial) setW(EMPTY)
+      if (!props.initial) {
+        setW(EMPTY)
+        termRef.current?.focus()
+      }
+    } catch {
+      setFailed(true)
     } finally {
       setBusy(false)
     }
@@ -34,7 +43,7 @@ export function WordForm(props: {
 
   return (
     <form onSubmit={submit} className="space-y-2">
-      <input className={input} placeholder="Begriff (Fremdsprache)" value={w.term} onChange={set('term')} autoCapitalize="off" />
+      <input ref={termRef} className={input} placeholder="Begriff (Fremdsprache)" value={w.term} onChange={set('term')} autoCapitalize="off" />
       <input className={input} placeholder="Übersetzung" value={w.translation} onChange={set('translation')} />
       {more ? (
         <>
@@ -57,6 +66,7 @@ export function WordForm(props: {
           </button>
         )}
       </div>
+      {failed && <ErrorBox>Speichern hat nicht geklappt. Bitte nochmal versuchen.</ErrorBox>}
     </form>
   )
 }

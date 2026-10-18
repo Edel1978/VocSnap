@@ -20,6 +20,7 @@ export function ExamEditPage() {
   const [date, setDate] = useState(oldDate ?? isoDay(addDays(new Date(), 7)))
   const [selected, setSelected] = useState<Set<string> | null>(null)
   const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   if (!profile) return <ErrorBox>Bitte zuerst ein Profil anlegen.</ErrorBox>
   if (lessons.state === 'loading') return <Loading />
@@ -36,20 +37,30 @@ export function ExamEditPage() {
 
   const save = async () => {
     setBusy(true)
-    for (const l of lessons.data) {
-      if (chosen.has(l.id)) {
-        if (l.exam_date !== date) await store.updateLesson(l.id, { exam_date: date })
-      } else if (oldDate && l.exam_date === oldDate) {
-        await store.updateLesson(l.id, { exam_date: null })
+    setFailed(false)
+    try {
+      for (const l of lessons.data) {
+        if (chosen.has(l.id)) {
+          if (l.exam_date !== date) await store.updateLesson(l.id, { exam_date: date })
+        } else if (oldDate && l.exam_date === oldDate) {
+          await store.updateLesson(l.id, { exam_date: null })
+        }
       }
+      navigate(`/arbeit/${date}`, { replace: true })
+    } catch {
+      setFailed(true)
+      setBusy(false)
     }
-    navigate(`/arbeit/${date}`, { replace: true })
   }
 
   const remove = async () => {
     if (!oldDate || !confirm('Plan für diese Klassenarbeit löschen? Die Lektionen bleiben erhalten.')) return
-    for (const l of lessons.data) if (l.exam_date === oldDate) await store.updateLesson(l.id, { exam_date: null })
-    navigate('/', { replace: true })
+    try {
+      for (const l of lessons.data) if (l.exam_date === oldDate) await store.updateLesson(l.id, { exam_date: null })
+      navigate('/', { replace: true })
+    } catch {
+      setFailed(true)
+    }
   }
 
   return (
@@ -92,6 +103,7 @@ export function ExamEditPage() {
       >
         Lernplan erstellen
       </button>
+      {failed && <ErrorBox>Speichern hat nicht geklappt. Bitte nochmal versuchen.</ErrorBox>}
       {oldDate && (
         <button type="button" className={danger} onClick={remove}>
           Plan löschen
