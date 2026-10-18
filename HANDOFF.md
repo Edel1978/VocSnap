@@ -17,7 +17,8 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | R1 Redesign Stil A3 | fertig | Farbschema, Schriften, Snappy, Startseite, Logo 4a, Start-Animation |
 | R2 Seiten und Extras | fertig | Lernen, Erfolge, Mehr, Lektion neu; Snappy-Tipps, Einführung, Töne, leere Zustände |
 | R3 Belohnungen und Anleitung | fertig | Neue Level-Kurve mit Rängen, Abzeichen in Stufen, Streak-Schutz |
-| R4 Geführte Einführung | in Arbeit | Führung durch die echte App (Spotlight, Snappy-Sprechblase), Beispielwörter, Startton ohne Knopf. Wartet auf Freigabe durch den Nutzer |
+| R4 Geführte Einführung | fertig | Führung durch die echte App (Spotlight, Snappy-Sprechblase), Beispielwörter, Startton ohne Knopf |
+| R5 Aussprache und Fehlerbehebung | in Arbeit | Lernmodus Aussprache (einschaltbar), 12 Fehler und Verbesserungen aus der Durchsicht. Pull Request offen |
 | E5 Motivation und Feinschliff | fertig | XP, Level, Streak, Tagesziel, Abzeichen, Bestenliste, Konfetti, Avatare, App-Icons, Offline (PWA), Navigation mit Icons |
 
 Status: offen / in Arbeit / fertig.
@@ -41,9 +42,9 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-Stand 2026-10-18: R4 ist gebaut und gepusht, der Nutzer prüft die Screenshots. Pull Request erst nach seiner Freigabe.
+Stand 2026-10-18: R5 ist gebaut, Pull Request offen. Der Nutzer merged selbst.
 
-1. Rückmeldung zu R4 einarbeiten, dann Pull Request.
+1. Aussprache auf echten Geräten prüfen (Chrome Android, Samsung Internet).
 2. Verbrauchtes Guthaben nach E5 und dem Redesign nachtragen.
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
@@ -147,6 +148,11 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Snappy-Tipps (`src/learn/tips.ts`): Sprechblase auf der Startseite je nach Tagesziel, Serie, gestern und Uhrzeit.
 - Geführte Einführung (`src/ui/tour/`): dunkelt die Seite ab, lässt nur das markierte Element (`data-tour`) bedienbar und erklärt es in einer Snappy-Sprechblase. Schritte sind Daten in `steps.ts` (Seite, Ziel, Text, wie es weitergeht: Knopf, Tipp aufs Ziel, Seitenwechsel oder Erscheinen des nächsten Ziels). Bei Formularen und in der Lernrunde bleibt die Seite frei bedienbar.
 - Neu ohne Lektionen: Lektion anlegen, Wörter hinzufügen (oder Beispielwörter), Lektion lernen, Runde, Ergebnis, Startseite, Navigation. Mit vorhandenen Lektionen: kurzer Rundgang über die Startseite. Start nach dem ersten Profil, neu über „Mehr → Anleitung" oder „Über VocSnap". Stand liegt in den Einstellungen (`tour`), abseits der Schritte erscheint „Anleitung pausiert · Beenden".
+- Lernmodus Aussprache (`src/modes/speak/`): zeigt das deutsche Wort, die Fremdsprache wird ins Mikrofon gesprochen (Web Speech API, braucht Internet). Bewertung in `src/learn/pronunciation.ts`: ohne Groß-/Kleinschreibung, Satzzeichen und Artikel; knapp daneben = halb. Bis zu 3 Versuche, „Vorsprechen“ begrenzt auf halb. Bei Fehlern (kein Mikrofon, kein Internet, Browser ohne Erkennung) Selbstbewertung. Standardmäßig aus und unsichtbar, einschalten unter Mehr → Lernen (`settings.pronunciation`).
+- Robustheit: Wörter aus Scan, Text und Beispielen in einer Transaktion (`Store.createWords`). Fehlerbildschirm (`ErrorBoundary`) statt weißer Seite. Speicherfehler in Formularen sichtbar. Nach einer Runde lädt die Lernseite den Stand neu. Zurück nach dem Scan fragt nach.
+- Datensicherheit: `navigator.storage.persist()` nach dem ersten Profil. Letzter Export in `settings.lastBackup`; ab 20 Wörtern erinnert die Startseite, wenn nie oder vor 14 Tagen gesichert wurde (`src/data/backup.ts`).
+- PWA: `registerType: 'prompt'`, `UpdateWatcher` lädt neue Versionen nur auf Start- oder Erfolge-Seite. Tesseract-Cache heißt nach den Paketversionen, ältere Caches werden beim Start gelöscht.
+- Kontrast: `slate-400/500` im hellen Modus dunkler, im dunklen Modus heller (`src/index.css`).
 - Beispielwörter (`src/data/examples.ts`): erfundene Grundwörter Englisch/Französisch ↔ Deutsch, Knopf nur in leeren Lektionen.
 - Töne per Web Audio (keine Dateien): Start-Melodie mit Auslöser-Klick, Töne bei richtig/halb/falsch und Erfolg. Abschaltbar unter Darstellung. Browser spielen Ton oft erst nach einer Berührung (z. B. Samsung). Ist der Ton gesperrt, bleibt der Start still (Wunsch des Nutzers, kein Knopf). Der gesperrte Audio-Kontext wird verworfen, damit die Melodie nicht später unpassend erklingt.
 - Fehlertoleranz (offene Punkte aus der SPEC vorläufig so entschieden, änderbar in `tolerance.ts`):
@@ -179,6 +185,7 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Scan-Qualität bei echten Buchseiten (Lautschrift-Spalte, drei Spalten) beobachten, ggf. `layout.ts` anpassen.
 - Beim nächsten `schema_version`-Sprung: Upgrade-Schritt für alte Export-Dateien in `UPGRADES` (`src/data/exchange.ts`) ergänzen.
 - Server und Anbieter für den späteren Sync.
+- Aus der Durchsicht offen: Lernverlauf wird pro Seite mehrfach geladen und sortiert (bei vielen tausend Abfragen träge); Tesseract startet pro Seite einen neuen Worker; Warnung bei doppelten Wörtern; Tastenkürzel 1–4 im Multiple Choice; Export per Teilen-Dialog auf dem iPhone.
 
 ## Wunschliste (nicht in der laufenden Etappe bauen)
 
