@@ -117,7 +117,7 @@ export function ScanPage() {
         initial={phase.result.words}
         skipped={phase.result.skipped}
         note={phase.result.note}
-        onBack={() => setPhase({ name: 'pick' })}
+        onBack={() => confirm('Erkannte Wörter verwerfen und neu scannen?') && setPhase({ name: 'pick' })}
         onSaved={() => navigate(`/lektion/${id}`, { replace: true })}
       />
     )
