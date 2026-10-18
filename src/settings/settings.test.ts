@@ -22,8 +22,8 @@ describe('parseSettings', () => {
   })
 
   it('übernimmt gültige Werte', () => {
-    const s = parseSettings({ theme: 'light', flashcardConfirm: 'swipe', dailyGoal: 5, apiKeys: { gemini: 'k' } })
-    expect(s.theme).toBe('light')
+    const s = parseSettings({ theme: 'dark', flashcardConfirm: 'swipe', dailyGoal: 5, apiKeys: { gemini: 'k' } })
+    expect(s.theme).toBe('dark')
     expect(s.flashcardConfirm).toBe('swipe')
     expect(s.dailyGoal).toBe(5)
     expect(s.apiKeys).toEqual({ gemini: 'k' })
@@ -31,7 +31,7 @@ describe('parseSettings', () => {
 
   it('verwirft ungültige Werte', () => {
     const s = parseSettings({ theme: 'pink', dailyGoal: -3, leitnerIntervals: [1, 2], apiKeys: { x: 'k' }, invalidKeys: ['x', 'groq'] })
-    expect(s.theme).toBe('dark')
+    expect(s.theme).toBe('light')
     expect(s.dailyGoal).toBe(20)
     expect(s.leitnerIntervals).toEqual([1, 2, 4, 8, 16])
     expect(s.apiKeys).toEqual({})
@@ -51,6 +51,18 @@ describe('Anbieter-Reihenfolge', () => {
 
   it('übernimmt eigene Reihenfolge und ergänzt Fehlendes', () => {
     expect(parseSettings({ providerOrder: ['groq', 'foo', 'groq'] }).providerOrder).toEqual(['groq', 'gemini', 'tesseract'])
+  })
+})
+
+describe('Lernvorgaben', () => {
+  it('merkt sich Modus, Richtung und Vibration', () => {
+    const s = parseSettings({ learnMode: 'typing', learnDirection: 'both', haptics: false })
+    expect([s.learnMode, s.learnDirection, s.haptics]).toEqual(['typing', 'both', false])
+  })
+
+  it('verwirft Unbekanntes', () => {
+    const s = parseSettings({ learnMode: 'x', learnDirection: 'quer', haptics: 'ja' })
+    expect([s.learnMode, s.learnDirection, s.haptics]).toEqual(['flashcard', 'to_target', true])
   })
 })
 

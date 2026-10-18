@@ -64,6 +64,18 @@ export function SettingsPage() {
         />
       </Section>
 
+      <Section title="Vibration">
+        <Choice<'on' | 'off'>
+          value={settings.haptics ? 'on' : 'off'}
+          options={[
+            { value: 'on', label: 'An' },
+            { value: 'off', label: 'Aus' },
+          ]}
+          onChange={(v) => updateSettings({ haptics: v === 'on' })}
+        />
+        <p className="mt-2 text-sm text-slate-500">Kurzes Vibrieren bei Antworten. Funktioniert auf Android, nicht auf dem iPhone.</p>
+      </Section>
+
       <Section title="Karteikarten">
         <Choice<Settings['flashcardConfirm']>
           value={settings.flashcardConfirm}

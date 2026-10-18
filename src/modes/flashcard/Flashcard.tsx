@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import type { ReviewResult } from '../../data/types'
 import { prompt, solution } from '../../learn/session'
+import { haptic } from '../../ui/haptics'
 import type { ModeProps } from '../types'
 
 const SWIPE_DISTANCE = 100
@@ -12,7 +13,10 @@ export function Flashcard({ items, settings, onResults }: ModeProps) {
   const [dx, setDx] = useState(0)
   const start = useRef<number | null>(null)
 
-  const done = (result: ReviewResult) => onResults([{ item, result }])
+  const done = (result: ReviewResult) => {
+    haptic.result(result)
+    onResults([{ item, result }])
+  }
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
