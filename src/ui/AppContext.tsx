@@ -62,6 +62,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const list = profiles.state === 'ready' ? profiles.list : []
   const profile = list.find((p) => p.id === settings.activeProfileId) ?? list[0] ?? null
 
+  // Daten liegen nur hier: den Browser bitten, sie bei Speichermangel nicht zu löschen.
+  const hasProfile = profile !== null
+  useEffect(() => {
+    if (hasProfile) void navigator.storage?.persist?.().catch(() => {})
+  }, [hasProfile])
+
   const value = useMemo<AppContextValue>(
     () => ({ store, settings, updateSettings, profiles, profile, reloadProfiles }),
     [store, settings, updateSettings, profiles, profile, reloadProfiles],

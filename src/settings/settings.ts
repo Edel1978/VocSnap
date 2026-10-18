@@ -26,6 +26,8 @@ export interface Settings {
   haptics: boolean
   // Töne bei Antworten und beim Start.
   sounds: boolean
+  // Zeitpunkt des letzten Exports (ISO), für die Sicherungs-Erinnerung.
+  lastBackup: string | null
   // Lernmodus „Aussprache“ (Mikrofon), standardmäßig aus und verborgen.
   pronunciation: boolean
   // Geführte Einführung erledigt oder übersprungen.
@@ -49,6 +51,7 @@ export const DEFAULT_SETTINGS: Settings = {
   activeProfileId: null,
   haptics: true,
   sounds: true,
+  lastBackup: null,
   pronunciation: false,
   onboarded: false,
   tour: null,
@@ -91,6 +94,7 @@ export function parseSettings(raw: unknown): Settings {
   if (typeof r.activeProfileId === 'string') s.activeProfileId = r.activeProfileId
   if (typeof r.haptics === 'boolean') s.haptics = r.haptics
   if (typeof r.sounds === 'boolean') s.sounds = r.sounds
+  if (typeof r.lastBackup === 'string' && !Number.isNaN(Date.parse(r.lastBackup))) s.lastBackup = r.lastBackup
   if (typeof r.pronunciation === 'boolean') s.pronunciation = r.pronunciation
   if (typeof r.onboarded === 'boolean') s.onboarded = r.onboarded
   const t = r.tour as Record<string, unknown> | null | undefined
