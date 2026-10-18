@@ -40,7 +40,7 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 Stand 2026-10-18: Redesign nach Stil „A3" (vom Nutzer gewählt) begonnen. Startseite und Grundlagen sind umgestellt.
 
 1. Restliche Seiten im Stil A3 überarbeiten: Lernen (Einrichtung), Lektion, Einstellungen (in Gruppen statt einer langen Seite), Erfolge, Scan.
-2. Logo: Nutzer tendiert zu Variante 4 (V im Auslöser-Ring), Varianten 4a–4e liegen vor, Entscheidung abwarten. Danach App-Icons in `public/icons/` und Logo in der Start-Animation ersetzen.
+2. Logo ist entschieden (Variante 4a) und eingebaut.
 3. Verbrauchtes Guthaben nach E5 nachtragen.
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
@@ -85,7 +85,7 @@ Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.githu
 | `public/icons/` | Platzhalter-App-Icons (selbst erzeugt) |
 | `.claude/skills/ui-ux-pro-max/` | Design-Skill (MIT, Quelle in `QUELLE.md`), lokal nutzbar mit `python3 scripts/search.py` |
 | `src/index.css` | Design-Grundlage: Farben (Tailwind-Theme), Schriften, Schatten, Animationen |
-| `src/ui/ui.ts`, `icons.tsx`, `Mascot.tsx`, `haptics.ts` | Gemeinsame Klassen, Linien-Icons, Maskottchen „Snappy", Vibration |
+| `src/ui/ui.ts`, `icons.tsx`, `Mascot.tsx`, `Logo.tsx`, `Splash.tsx`, `haptics.ts` | Gemeinsame Klassen, Linien-Icons, Maskottchen „Snappy", Vibration |
 | `vite.config.ts` | PWA: Manifest, Service Worker (vite-plugin-pwa) |
 | `src/modes/choice/`, `typing/`, `listen/`, `shared/` | Lernmodi und gemeinsame Teile (Eingabe, Rückmeldung, Sprachausgabe in `speech.ts`) |
 | `src/modes/modes.ts` | Kennungen und Standard-Reihenfolge der Lernmodi |
@@ -130,7 +130,8 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - PWA: App-Hülle wird vorab gespeichert (ca. 0,5 MB), Lernen geht damit offline. Tesseract-Dateien (ca. 17 MB) werden erst beim ersten Scan zwischengespeichert. Updates werden automatisch geladen (`autoUpdate`).
 - Design „A3": Indigo (#4F46E5) mit Orange als Aktionsfarbe, Hintergrund #F5F3FF, weiche Karten mit Schatten statt Rahmen, Überschriften Fredoka, Text Nunito (beide OFL, mitgeliefert, offline). Die Tailwind-Grautöne (`slate-*`) sind im Theme auf leicht indigofarbene Töne umgestellt, so passen alle Seiten ohne Einzeländerung. Hell ist jetzt Standard, Dunkel bleibt wählbar.
 - Maskottchen „Snappy" (Karteikarte mit Gesicht, selbst gezeichnet): fröhlich, jubelnd (alles erledigt, fehlerfreie Runde) oder müde (Serie abgerissen).
-- Start-Animation (`src/ui/Splash.tsx`): einmal pro App-Start, ca. 1,9 s, Tipp überspringt. Karten fliegen herein, Kamerablitz, Snappy hüpft heraus, Schriftzug Buchstabe für Buchstabe. Bei „Bewegung reduzieren" nur 0,6 s ohne Bewegung.
+- Logo 4a (`src/ui/Logo.tsx`): weißes Kärtchen mit „V" (als Form gezeichnet, nicht als Schrift) im orangen Auslöser-Ring, gelber Funke, Indigo-Verlauf. Daraus sind Favicon und App-Icons in `public/icons/` erzeugt (normal, maskable, Apple).
+- Start-Animation (`src/ui/Splash.tsx`): einmal pro App-Start, ca. 2,3 s, Tipp überspringt. Das Logo setzt sich zusammen (Kärtchen wirbelt herein, Ring dreht sich ein, Blitz beim Einrasten, Funke leuchtet), dann erscheint der Schriftzug Buchstabe für Buchstabe. Bei „Bewegung reduzieren" nur 0,6 s ohne Bewegung.
 - Animationen nur per CSS (Einblenden, Wippen, Blinzeln, Drücken, Schütteln bei falsch). Bei „Bewegung reduzieren" ist alles aus.
 - Vibration über `navigator.vibrate` (Android), abschaltbar in den Einstellungen. iPhones unterstützen das im Browser nicht.
 - „Weiterlernen" startet sofort mit dem zuletzt gewählten Modus und der Richtung und allen fälligen Karten. Ist nichts fällig, öffnet sich die normale Auswahl. „Heute dran" zählt die fälligen Wörter in genau dieser Richtung.
