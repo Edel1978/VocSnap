@@ -14,7 +14,7 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | E2b Anbieter-Kette | fertig | Gemini → Groq → Tesseract mit automatischem Wechsel, Groq als zweiter Anbieter, mehrere Seiten pro Scan |
 | E3 Lernmodi | fertig | Leitner (5 Fächer, fällige Karten), Multiple Choice, Tippen, Hören und Schreiben, Fehlertoleranz |
 | E4 Klassenarbeit und Matching | fertig | Lernplan zum Datum der Arbeit (Tagesplan, Generalprobe), Matching-Spiel |
-| E5 Motivation und Feinschliff | offen | |
+| E5 Motivation und Feinschliff | fertig | XP, Level, Streak, Tagesziel, Abzeichen, Bestenliste, Konfetti, Avatare, App-Icons, Offline (PWA), Navigation mit Icons |
 
 Status: offen / in Arbeit / fertig.
 
@@ -28,6 +28,7 @@ Status: offen / in Arbeit / fertig.
 | E3 | bitte nachtragen | bitte nachtragen |
 | E2b | bitte nachtragen | bitte nachtragen |
 | E4 | ca. 26 % (ca. 26 $, gesamt seit E0) | ca. 74 % (ca. 73 $) |
+| E5 | bitte nachtragen | bitte nachtragen |
 
 Der Verbrauch ist in der Sitzung nicht sichtbar und muss in der Abrechnung nachgesehen werden.
 
@@ -35,10 +36,11 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-Stand 2026-10-18: E0 bis E4 und E2b sind fertig.
+Stand 2026-10-18: Alle Etappen E0 bis E5 (und E2b) sind fertig. Weiter geht es mit Feinschliff, Fehlerbehebung und der Wunschliste.
 
-1. Sprachausgabe (Hören und Schreiben) auf dem Handy prüfen.
-2. E5 beginnen (siehe `SPEC.md`, Abschnitt 6). Guthaben reicht, nach E4 ca. 26 % verbraucht.
+1. Verbrauchtes Guthaben nach E5 nachtragen.
+2. App auf dem Handy installieren („Zum Startbildschirm hinzufügen") und offline testen. Sprachausgabe prüfen.
+3. Offene Punkte unten abarbeiten, dann Ideen aus der Wunschliste mit dem Nutzer priorisieren.
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
 
@@ -76,6 +78,11 @@ Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.githu
 | `src/learn/matching.ts`, `src/modes/matching/` | Matching-Spiel (5 Paare pro Runde) |
 | `src/learn/dates.ts` | Lokale Tage, Datumsanzeige |
 | `src/ui/exam.ts`, `src/ui/pages/ExamPages.tsx` | Klassenarbeit laden, planen, anzeigen |
+| `src/learn/motivation.ts` | XP, Level, Streak, Tagesziel, Abzeichen (alles aus Ereignissen) |
+| `src/ui/stats.ts`, `StatsBar.tsx`, `pages/AchievementsPage.tsx` | Statusleiste, Erfolge-Seite mit Bestenliste |
+| `src/ui/Confetti.tsx` | Konfetti (eigenes Canvas, ohne Bibliothek) |
+| `public/icons/` | Platzhalter-App-Icons (selbst erzeugt) |
+| `vite.config.ts` | PWA: Manifest, Service Worker (vite-plugin-pwa) |
 | `src/modes/choice/`, `typing/`, `listen/`, `shared/` | Lernmodi und gemeinsame Teile (Eingabe, Rückmeldung, Sprachausgabe in `speech.ts`) |
 | `src/modes/modes.ts` | Kennungen und Standard-Reihenfolge der Lernmodi |
 | `src/modes/types.ts`, `registry.ts` | Schnittstelle `LearningMode` und Liste der fertigen Modi |
@@ -108,6 +115,14 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Lernplan (`planExam`): Karte = Wort + Richtung, beide Richtungen. Neue Karten werden gleichmäßig auf die Tage vor dem letzten Tag verteilt. Die Tagesquote richtet sich nach dem Stand zu Tagesbeginn, damit sie sich beim Lernen nicht verschiebt. Dazu kommen die nach Leitner fälligen Karten. Am letzten Tag vor der Arbeit Generalprobe mit allen Karten, am Tag der Arbeit nur die unsicheren (Fach 1–2). „Sicher" heißt ab Fach 3.
 - „Jetzt lernen" im Plan fragt zuerst die heute noch offenen Karten ab, danach zum Nachüben alle geplanten.
 - Matching: 5 Paare pro Runde, erst links wählen, dann rechts. Ein Fehlversuch macht die Abfrage falsch, sonst richtig. Gleicher Lösungstext zählt als Treffer. Bei „Beide Richtungen" kann dasselbe Wort in beiden Richtungen in einer Runde vorkommen.
+- XP: richtig 10, halb 5, falsch 1. Level n ab 50 · (n−1)² XP (Level 2 ab 50, 3 ab 200, 4 ab 450 …).
+- Streak: Tage in Folge mit mindestens einer Abfrage. Zählt bis gestern weiter, solange heute noch gelernt werden kann.
+- Tagesziel: verschiedene Wörter pro Tag (Einstellung „Vokabeln pro Tag").
+- Abzeichen werden nur aus Kennzahlen berechnet, nicht gespeichert (passt zum Prinzip „Lernstand aus Ereignissen").
+- Bestenliste: alle Profile des Geräts, wahlweise XP der letzten 7 Tage oder gesamt. Erscheint ab zwei Profilen.
+- Belohnung am Rundenende: XP der Runde, Level-Aufstieg, „Tagesziel geschafft". Konfetti bei Level-Aufstieg, erreichtem Tagesziel oder fehlerfreier Runde. Entfällt bei „Bewegung reduzieren".
+- Avatare: Emoji als Platzhalter (Feld `avatar` im Profil).
+- PWA: App-Hülle wird vorab gespeichert (ca. 0,5 MB), Lernen geht damit offline. Tesseract-Dateien (ca. 17 MB) werden erst beim ersten Scan zwischengespeichert. Updates werden automatisch geladen (`autoUpdate`).
 - Fehlertoleranz (offene Punkte aus der SPEC vorläufig so entschieden, änderbar in `tolerance.ts`):
   - Ein Buchstabe daneben ist halb, erst ab drei Buchstaben im Lösungswort.
   - Ein fehlender oder falscher Akzent zählt als ein Buchstabe, also halb. Zwei Akzentfehler sind falsch.
@@ -130,6 +145,7 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 
 - Fehlertoleranz: vorläufige Entscheidungen (siehe oben) im Alltag prüfen.
 - Matching: prüfen, ob dasselbe Wort in beiden Richtungen in einer Runde stört (dann pro Runde nur eine Richtung je Wort).
+- Offline-Scan mit Tesseract nach dem ersten Laden auf echten Geräten prüfen (Worker lädt den Kern per `importScripts`, ob der Service Worker das abfängt, hängt vom Browser ab).
 - Reihenfolge der Lernmodi im Menü (vorläufig: Karteikarte, Multiple Choice, Tippen, Hören und Schreiben, Matching).
 - Gemini-Bedingungen bei Gelegenheit direkt auf ai.google.dev gegenlesen.
 - Groq-Nutzungsbedingungen (Alter, Datennutzung) prüfen.

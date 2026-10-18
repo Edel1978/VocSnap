@@ -29,6 +29,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', settings.theme === 'dark')
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', settings.theme === 'dark' ? '#0f172a' : '#f8fafc')
   }, [settings.theme])
 
   const updateSettings = useCallback((patch: Partial<Settings>) => {
