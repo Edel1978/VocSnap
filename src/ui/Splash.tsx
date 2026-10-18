@@ -1,5 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { LOGO, LogoCard, LogoRing, LogoSpark } from './Logo'
+import { sound } from './sounds'
+import { useApp } from './AppContext'
 
 // Nur einmal pro App-Start, nicht bei Seitenwechseln.
 let shown = false
@@ -16,11 +18,14 @@ const own = (animation: string): CSSProperties => ({ animation, transformBox: 'f
 // es macht „Snap" (Blitz), der Funke leuchtet auf, dann erscheint der Name.
 export function Splash() {
   const [visible, setVisible] = useState(!shown)
+  const { sounds } = useApp().settings
 
   useEffect(() => {
     if (!visible) return
     shown = true
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    // Einstellung direkt lesen: der Effekt läuft vor dem des AppProviders.
+    if (!reduced && sounds) sound.intro()
     const t = setTimeout(() => setVisible(false), reduced ? REDUCED_MS : TOTAL_MS)
     return () => clearTimeout(t)
   }, [visible])

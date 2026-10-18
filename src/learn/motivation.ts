@@ -30,11 +30,14 @@ export interface Stats {
   bestStreak: number
   // Verschiedene Wörter, die heute gewusst wurden (richtig oder halb). Grundlage für das Tagesziel.
   todayWords: number
+  yesterdayWords: number
   reviews: number
   // Tage, an denen das Tagesziel erreicht wurde.
   goalDays: number
   // Tage mit mindestens einer Abfrage (dayNumber), z. B. für die Wochenleiste.
   activeDays: Set<number>
+  // Abfragen je Tag (dayNumber), für den Lern-Kalender.
+  reviewsPerDay: Map<number, number>
 }
 
 // Berechnet alle Kennzahlen aus den Ereignissen.
@@ -44,6 +47,7 @@ export function computeStats(events: ReviewEvent[], dailyGoal: number, now: Date
   // Nur gewusste Wörter zählen fürs Tagesziel, aktive Tage (Streak) zählen jede Abfrage.
   const knownPerDay = new Map<number, Set<string>>()
   const activeDays = new Set<number>()
+  const reviewsPerDay = new Map<number, number>()
   let xp = 0
   let weekXp = 0
   for (const e of active) {
@@ -51,6 +55,7 @@ export function computeStats(events: ReviewEvent[], dailyGoal: number, now: Date
     xp += XP[e.result]
     if (today - day < 7) weekXp += XP[e.result]
     activeDays.add(day)
+    reviewsPerDay.set(day, (reviewsPerDay.get(day) ?? 0) + 1)
     if (e.result === 'wrong') continue
     if (!knownPerDay.has(day)) knownPerDay.set(day, new Set())
     knownPerDay.get(day)!.add(e.word_id)
@@ -77,30 +82,48 @@ export function computeStats(events: ReviewEvent[], dailyGoal: number, now: Date
     streak,
     bestStreak,
     todayWords: knownPerDay.get(today)?.size ?? 0,
+    yesterdayWords: knownPerDay.get(today - 1)?.size ?? 0,
     reviews: active.length,
     goalDays: [...knownPerDay.values()].filter((s) => s.size >= dailyGoal).length,
     activeDays,
+    reviewsPerDay,
   }
 }
+
+export type BadgeStats = Stats & { maxBox: number }
 
 export interface Badge {
   id: string
   icon: string
   title: string
   description: string
-  earned: (s: Stats & { maxBox: number }) => boolean
+  // Aktueller Wert und Ziel, daraus ergeben sich „erreicht" und der Fortschritt.
+  progress: (s: BadgeStats) => [current: number, target: number]
 }
 
+const badge = (id: string, icon: string, title: string, description: string, value: (s: BadgeStats) => number, target: number): Badge => ({
+  id,
+  icon,
+  title,
+  description,
+  progress: (s) => [Math.min(value(s), target), target],
+})
+
 export const BADGES: Badge[] = [
-  { id: 'start', icon: '🌱', title: 'Erster Schritt', description: 'Die erste Abfrage', earned: (s) => s.reviews >= 1 },
-  { id: 'r100', icon: '💯', title: 'Hundert', description: '100 Abfragen', earned: (s) => s.reviews >= 100 },
-  { id: 'r1000', icon: '🏆', title: 'Tausend', description: '1000 Abfragen', earned: (s) => s.reviews >= 1000 },
-  { id: 'goal1', icon: '🎯', title: 'Ziel erreicht', description: 'Tagesziel einmal geschafft', earned: (s) => s.goalDays >= 1 },
-  { id: 'goal10', icon: '🎖️', title: 'Zielsicher', description: 'Tagesziel an 10 Tagen', earned: (s) => s.goalDays >= 10 },
-  { id: 'streak3', icon: '🔥', title: 'Dranbleiben', description: '3 Tage in Folge', earned: (s) => s.bestStreak >= 3 },
-  { id: 'streak7', icon: '📅', title: 'Eine Woche', description: '7 Tage in Folge', earned: (s) => s.bestStreak >= 7 },
-  { id: 'streak30', icon: '🌟', title: 'Ein Monat', description: '30 Tage in Folge', earned: (s) => s.bestStreak >= 30 },
-  { id: 'level5', icon: '⭐', title: 'Level 5', description: 'Level 5 erreicht', earned: (s) => s.level.level >= 5 },
-  { id: 'level10', icon: '🚀', title: 'Level 10', description: 'Level 10 erreicht', earned: (s) => s.level.level >= 10 },
-  { id: 'box5', icon: '🧠', title: 'Sitzt!', description: 'Eine Karte in Fach 5', earned: (s) => s.maxBox >= 5 },
+  badge('start', '🌱', 'Erster Schritt', 'Die erste Abfrage', (s) => s.reviews, 1),
+  badge('r100', '💯', 'Hundert', '100 Abfragen', (s) => s.reviews, 100),
+  badge('r1000', '🏆', 'Tausend', '1000 Abfragen', (s) => s.reviews, 1000),
+  badge('goal1', '🎯', 'Ziel erreicht', 'Tagesziel einmal geschafft', (s) => s.goalDays, 1),
+  badge('goal10', '🎖️', 'Zielsicher', 'Tagesziel an 10 Tagen', (s) => s.goalDays, 10),
+  badge('streak3', '🔥', 'Dranbleiben', '3 Tage in Folge', (s) => s.bestStreak, 3),
+  badge('streak7', '📅', 'Eine Woche', '7 Tage in Folge', (s) => s.bestStreak, 7),
+  badge('streak30', '🌟', 'Ein Monat', '30 Tage in Folge', (s) => s.bestStreak, 30),
+  badge('level5', '⭐', 'Level 5', 'Level 5 erreicht', (s) => s.level.level, 5),
+  badge('level10', '🚀', 'Level 10', 'Level 10 erreicht', (s) => s.level.level, 10),
+  badge('box5', '🧠', 'Sitzt!', 'Eine Karte in Fach 5', (s) => (s.maxBox >= 5 ? 1 : 0), 1),
 ]
+
+export function earned(b: Badge, s: BadgeStats): boolean {
+  const [cur, target] = b.progress(s)
+  return cur >= target
+}

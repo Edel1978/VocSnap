@@ -1,4 +1,4 @@
-import { HashRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { HashRouter, Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { AppProvider, useApp } from './AppContext'
 import { Icon, type IconName } from './icons'
 import { Logo } from './Logo'
@@ -8,11 +8,11 @@ import { HomePage } from './pages/HomePage'
 import { LearnPage } from './pages/LearnPage'
 import { LessonPage, NewLessonPage } from './pages/LessonPage'
 import { PasteImportPage } from './pages/PasteImportPage'
-import { ProfilesPage } from './pages/ProfilesPage'
 import { ScanPage } from './pages/ScanPage'
 import { ScanPickPage } from './pages/ScanPickPage'
+import { Onboarding } from './Onboarding'
 import { Splash } from './Splash'
-import { SettingsPage } from './pages/SettingsPage'
+import { SettingsGroupPage, SettingsPage } from './pages/SettingsPage'
 
 const TABS: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: 'Start', icon: 'home' },
@@ -42,7 +42,7 @@ function Header() {
       </Link>
       {profile && (
         <Link
-          to="/profile"
+          to="/einstellungen/profil"
           aria-label="Profile"
           className="flex size-10 items-center justify-center rounded-full bg-orange-100 text-xl dark:bg-slate-800"
         >
@@ -57,6 +57,7 @@ export function App() {
   return (
     <AppProvider>
       <Splash />
+      <Onboarding />
       <HashRouter>
         <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <div className="absolute -top-24 -right-20 size-64 rounded-full bg-indigo-200 opacity-50 blur-3xl dark:bg-indigo-900/40" />
@@ -67,7 +68,7 @@ export function App() {
           <main className="flex-1 px-4 pb-28">
             <Routes>
               <Route path="/" element={<HomePage />} />
-              <Route path="/profile" element={<ProfilesPage />} />
+              <Route path="/profile" element={<Navigate to="/einstellungen/profil" replace />} />
               <Route path="/scan" element={<ScanPickPage />} />
               <Route path="/lektion/neu" element={<NewLessonPage />} />
               <Route path="/lektion/:id" element={<LessonPage />} />
@@ -78,6 +79,7 @@ export function App() {
               <Route path="/arbeit" element={<ExamEditPage />} />
               <Route path="/arbeit/:date" element={<ExamPage />} />
               <Route path="/einstellungen" element={<SettingsPage />} />
+              <Route path="/einstellungen/:group" element={<SettingsGroupPage />} />
               <Route path="*" element={<HomePage />} />
             </Routes>
           </main>

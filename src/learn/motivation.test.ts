@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import type { ReviewEvent } from '../data/types'
-import { BADGES, computeStats, levelInfo, xpForLevel } from './motivation'
+import { BADGES, computeStats, earned, levelInfo, xpForLevel } from './motivation'
 
 let n = 0
 const ev = (day: number, result: ReviewEvent['result'] = 'correct', word_id = 'w') =>
@@ -22,6 +22,7 @@ describe('Kennzahlen', () => {
     expect(s.xp).toBe(26)
     expect(s.weekXp).toBe(15)
     expect(s.reviews).toBe(4)
+    expect(s.reviewsPerDay.get(Math.max(...s.reviewsPerDay.keys()))).toBe(1)
   })
 
   it('Streak zählt bis heute oder gestern, sonst 0', () => {
@@ -57,7 +58,8 @@ describe('Kennzahlen', () => {
 describe('Badges', () => {
   it('werden aus den Kennzahlen vergeben', () => {
     const s = { ...computeStats([ev(18), ev(19), ev(20)], 1, now), maxBox: 5 }
-    const earned = BADGES.filter((b) => b.earned(s)).map((b) => b.id)
-    expect(earned).toEqual(['start', 'goal1', 'streak3', 'box5'])
+    expect(BADGES.filter((b) => earned(b, s)).map((b) => b.id)).toEqual(['start', 'goal1', 'streak3', 'box5'])
+    expect(BADGES.find((b) => b.id === 'r100')!.progress(s)).toEqual([3, 100])
+    expect(BADGES.find((b) => b.id === 'streak7')!.progress(s)).toEqual([3, 7])
   })
 })
