@@ -1,6 +1,7 @@
 import { MultipleChoice } from './choice/MultipleChoice'
 import { Flashcard } from './flashcard/Flashcard'
 import { ListenWrite } from './listen/ListenWrite'
+import { Matching } from './matching/Matching'
 import type { ModeId } from './modes'
 import { Typing } from './typing/Typing'
 import type { LearningMode } from './types'
@@ -11,4 +12,5 @@ export const LEARNING_MODES: Partial<Record<ModeId, LearningMode>> = {
   multiple_choice: { id: 'multiple_choice', batchSize: 1, Component: MultipleChoice },
   typing: { id: 'typing', batchSize: 1, Component: Typing },
   listen_write: { id: 'listen_write', batchSize: 1, Component: ListenWrite },
+  matching: { id: 'matching', batchSize: 5, Component: Matching },
 }
