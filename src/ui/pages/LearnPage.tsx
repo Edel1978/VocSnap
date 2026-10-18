@@ -22,11 +22,12 @@ import { MODES, type ModeId } from '../../modes/modes'
 import { LEARNING_MODES } from '../../modes/registry'
 import type { ModeResult } from '../../modes/types'
 import { useApp } from '../AppContext'
-import { ErrorBox, Loading, Section } from '../components'
+import { Empty, ErrorBox, Loading, PageTitle, Toggle } from '../components'
 import { Confetti } from '../Confetti'
 import { Mascot } from '../Mascot'
 import { haptic } from '../haptics'
-import { button, muted, primary } from '../ui'
+import { Icon, type IconName } from '../icons'
+import { button, card, choice, chosen as chosenCls, muted, press, primary } from '../ui'
 import { useAsync } from '../useAsync'
 
 const DIRECTIONS: { value: DirectionChoice; label: string }[] = [
@@ -34,6 +35,15 @@ const DIRECTIONS: { value: DirectionChoice; label: string }[] = [
   { value: 'to_source', label: 'Deutsch → Fremdsprache' },
   { value: 'both', label: 'Beide Richtungen' },
 ]
+
+// Aussehen der Lernmodi auf der Auswahlseite.
+const MODE_LOOK: Record<ModeId, { icon: IconName; color: string; text: string }> = {
+  flashcard: { icon: 'cards', color: '#6366F1', text: 'Umdrehen und selbst bewerten' },
+  multiple_choice: { icon: 'list', color: '#F97316', text: 'Aus 4 Antworten wählen' },
+  typing: { icon: 'keyboard', color: '#10B981', text: 'Antwort eintippen' },
+  listen_write: { icon: 'ear', color: '#EC4899', text: 'Anhören und schreiben' },
+  matching: { icon: 'puzzle', color: '#0EA5E9', text: 'Paare zuordnen' },
+}
 
 interface Round {
   mode: ModeId
@@ -145,14 +155,18 @@ function Setup(props: {
 
   if (props.lessons.length === 0) {
     return (
-      <Section title={props.errorsOnly ? 'Fehler wiederholen' : 'Lernen'}>
-        <p className={muted}>
-          {props.errorsOnly ? 'Keine offenen Fehler. Super!' : 'Noch keine Wörter. Leg zuerst eine Lektion mit Vokabeln an.'}
-        </p>
-        <Link to="/" className={`${button} mt-3 inline-block`}>
-          Zur Startseite
-        </Link>
-      </Section>
+      <>
+        <PageTitle title={props.errorsOnly ? 'Fehler wiederholen' : 'Lernen'} />
+        {props.errorsOnly ? (
+          <Empty mood="cheer" title="Keine offenen Fehler" text="Super, alles sitzt gerade!" />
+        ) : (
+          <Empty title="Noch keine Wörter" text="Leg zuerst eine Lektion mit Vokabeln an.">
+            <Link to="/lektion/neu" className={`${primary} block`}>
+              Neue Lektion
+            </Link>
+          </Empty>
+        )}
+      </>
     )
   }
 
@@ -172,95 +186,126 @@ function Setup(props: {
     else next.add(id)
     setSelected(next)
   }
+  const start = (m: ModeId) => {
+    if (items.length === 0) return
+    setMode(m)
+    if (!planKeys) updateSettings({ learnMode: m, learnDirection: dir })
+    props.onStart(m, items, words)
+  }
+  const title = props.errorsOnly ? 'Fehler wiederholen' : props.examDate ? `Arbeit ${formatDay(props.examDate)}` : 'Lernen'
+  const summaryText = [
+    chosen.length === props.lessons.length ? 'Alle Lektionen' : `${chosen.length} von ${props.lessons.length} Lektionen`,
+    DIRECTIONS.find((d) => d.value === dir)?.label,
+    !planKeys && (dueOnly ? 'nur fällige' : 'alle Wörter'),
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
   return (
     <div className="space-y-4">
-      {props.errorsOnly && <h2 className="text-lg font-semibold">Fehler wiederholen</h2>}
-      {props.examDate && <h2 className="text-lg font-semibold">Klassenarbeit {formatDay(props.examDate)}: heute dran</h2>}
-      <Section title="Lektionen">
-        <ul className="space-y-1">
-          {props.lessons.map(({ lesson, words }) => (
-            <li key={lesson.id}>
-              <label className="flex items-center gap-3 py-1">
-                <input
-                  type="checkbox"
-                  className="size-5 accent-indigo-600"
-                  checked={selected.has(lesson.id)}
-                  onChange={() => toggle(lesson.id)}
-                />
-                <span className="flex-1">{lesson.title}</span>
-                <span className={muted}>{words.length}</span>
-              </label>
-            </li>
-          ))}
-        </ul>
-      </Section>
-      <Section title="Richtung">
-        <div className="grid gap-2">
-          {DIRECTIONS.map((d) => (
-            <button
-              key={d.value}
-              type="button"
-              onClick={() => setDir(d.value)}
-              className={`rounded-lg px-3 py-2 text-left ${
-                dir === d.value ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800'
-              }`}
-            >
-              {d.label}
-            </button>
-          ))}
-        </div>
-      </Section>
-      <Section title="Lernmodus">
-        <div className="grid gap-2">
-          {settings.modeOrder.map((id) => {
+      <PageTitle title={title} />
+
+      <section className="relative animate-pop rounded-[28px] bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-700 p-5 text-white shadow-[0_14px_30px_-12px_rgb(79_70_229/0.7)]">
+        <Mascot mood={items.length === 0 ? 'cheer' : 'happy'} className="absolute -top-6 right-2 w-24 drop-shadow-lg" />
+        <p className="text-xs font-extrabold tracking-widest text-indigo-200 uppercase">
+          {planKeys ? 'Heute im Plan' : dueOnly ? 'Fällig' : 'Zum Üben'}
+        </p>
+        <p className="pr-24 font-display text-4xl leading-tight font-bold">
+          {items.length > 0 ? `${items.length} ${items.length === 1 ? 'Abfrage' : 'Abfragen'}` : 'Alles erledigt'}
+        </p>
+        {items.length > 0 ? (
+          <button type="button" className={`${primary} mt-4 flex w-full items-center justify-center gap-2`} onClick={() => mode && start(mode)}>
+            <Icon name="play" /> {MODES.find((m) => m.id === mode)?.label} starten
+          </button>
+        ) : (
+          <p className="mt-2 text-sm text-indigo-100">
+            {planKeys ? 'Für heute ist im Plan nichts mehr offen.' : 'Heute ist nichts fällig.'}
+          </p>
+        )}
+        {items.length === 0 && !planKeys && dueOnly && words.length > 0 && (
+          <button type="button" className={`${primary} mt-4 w-full`} onClick={() => setDueOnly(false)}>
+            Trotzdem üben
+          </button>
+        )}
+      </section>
+
+      <section>
+        <h2 className="mb-2.5 text-xl font-semibold">Lernmodus wählen</h2>
+        <div className="grid grid-cols-2 gap-2.5">
+          {settings.modeOrder.map((id, i) => {
+            const meta = MODE_LOOK[id]
             const ready = Boolean(LEARNING_MODES[id])
             return (
               <button
                 key={id}
                 type="button"
-                disabled={!ready}
-                onClick={() => setMode(id)}
-                className={`rounded-lg px-3 py-2 text-left disabled:opacity-40 ${
-                  mode === id ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800'
-                }`}
+                disabled={!ready || items.length === 0}
+                onClick={() => start(id)}
+                style={{ animationDelay: `${60 + i * 50}ms` }}
+                className={`${card} ${press} flex animate-pop flex-col items-start gap-2 text-left disabled:opacity-50 ${
+                  mode === id ? 'ring-3 ring-indigo-400' : ''
+                } ${i === 0 && settings.modeOrder.length % 2 === 1 ? 'col-span-2 flex-row items-center' : ''}`}
               >
-                {MODES.find((m) => m.id === id)?.label}
-                {!ready && <span className="ml-2 text-sm">(folgt)</span>}
+                <span className="flex size-11 items-center justify-center rounded-2xl text-white" style={{ backgroundColor: meta.color }}>
+                  <Icon name={meta.icon} />
+                </span>
+                <span>
+                  <span className="block font-display text-lg leading-tight font-semibold">{MODES.find((m) => m.id === id)?.label}</span>
+                  <span className={`${muted} block text-xs`}>{meta.text}</span>
+                </span>
               </button>
             )
           })}
         </div>
-      </Section>
-      {!planKeys && (
-        <label className="flex items-center gap-3 px-1">
-          <input
-            type="checkbox"
-            className="size-5 accent-indigo-600"
-            checked={dueOnly}
-            onChange={(e) => setDueOnly(e.target.checked)}
-          />
-          <span>Nur fällige Wörter</span>
-        </label>
-      )}
-      {items.length === 0 && planKeys && (
-        <p className={`${muted} px-1`}>Für heute ist im Plan nichts mehr offen.</p>
-      )}
-      {items.length === 0 && !planKeys && dueOnly && words.length > 0 && (
-        <p className={`${muted} px-1`}>Heute ist hier nichts fällig. Haken entfernen, um trotzdem zu üben.</p>
-      )}
-      <button
-        type="button"
-        className={`${primary} w-full`}
-        disabled={items.length === 0 || !mode}
-        onClick={() => {
-          if (!mode) return
-          if (!planKeys) updateSettings({ learnMode: mode, learnDirection: dir })
-          props.onStart(mode, items, words)
-        }}
-      >
-        Start ({items.length} {items.length === 1 ? 'Abfrage' : 'Abfragen'})
-      </button>
+      </section>
+
+      <details className={`${card} animate-pop group`}>
+        <summary className="flex cursor-pointer list-none items-center gap-3">
+          <Icon name="sliders" className="size-5 text-indigo-500" />
+          <span className="flex-1">
+            <span className="block font-bold">Anpassen</span>
+            <span className={`${muted} block text-xs`}>{summaryText}</span>
+          </span>
+          <Icon name="chevron" className="size-5 text-slate-400 transition-transform group-open:rotate-90" />
+        </summary>
+        <div className="mt-4 space-y-4">
+          <div>
+            <p className="mb-2 text-sm font-bold text-slate-500">Lektionen</p>
+            <ul className="space-y-1">
+              {props.lessons.map(({ lesson, words }) => (
+                <li key={lesson.id}>
+                  <label className="flex items-center gap-3 py-1">
+                    <input
+                      type="checkbox"
+                      className="size-5 accent-indigo-600"
+                      checked={selected.has(lesson.id)}
+                      onChange={() => toggle(lesson.id)}
+                    />
+                    <span className="flex-1">{lesson.title}</span>
+                    <span className={muted}>{words.length}</span>
+                  </label>
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div>
+            <p className="mb-2 text-sm font-bold text-slate-500">Richtung</p>
+            <div className="grid gap-2">
+              {DIRECTIONS.map((d) => (
+                <button
+                  key={d.value}
+                  type="button"
+                  onClick={() => setDir(d.value)}
+                  className={`rounded-xl px-3 py-2 text-left text-sm font-bold ${dir === d.value ? chosenCls : choice}`}
+                >
+                  {d.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {!planKeys && <Toggle label="Nur fällige Wörter" checked={dueOnly} onChange={setDueOnly} />}
+        </div>
+      </details>
     </div>
   )
 }
@@ -281,12 +326,15 @@ function RoundView({
   const saved = useRef(new Set<string>())
   const mode = LEARNING_MODES[round.mode]
   const { session } = round
+  // Richtige Antworten in Folge (halb zählt mit, falsch setzt zurück).
+  const [combo, setCombo] = useState(0)
 
   const onResults = useCallback(
     (results: ModeResult[]) => {
       let next = session
       for (const { item, result } of results) {
         next = answer(next, result)
+        setCombo((c) => (result === 'wrong' ? 0 : c + 1))
         const saving = store
           .addReviewEvent({
             word_id: item.word.id,
@@ -309,17 +357,29 @@ function RoundView({
   if (isFinished(session)) {
     const s = summary(session)
     const wrong = wrongItems(session)
+    const rate = (s.correct + s.half / 2) / Math.max(1, session.items.length)
+    const stars = rate >= 0.9 ? 3 : rate >= 0.6 ? 2 : 1
     return (
-      <div className="space-y-4">
-        <Mascot mood={s.wrong === 0 ? 'cheer' : 'happy'} className="mx-auto -mb-2 w-28" />
-        <Section title="Runde beendet">
-          <p className="text-lg">
-            {s.correct} von {session.items.length} gewusst
+      <div className="space-y-4 pt-2">
+        <div className="flex flex-col items-center text-center">
+          <Mascot mood={stars === 3 ? 'cheer' : 'happy'} className="w-32" />
+          <div className="mt-1 flex gap-1" aria-label={`${stars} von 3 Sternen`}>
+            {[1, 2, 3].map((n) => (
+              <span key={n} className="animate-pop" style={{ animationDelay: `${300 + n * 180}ms` }}>
+                <Icon
+                  name="star"
+                  className={`size-11 ${n <= stars ? 'fill-amber-300 text-amber-500' : 'fill-slate-100 text-slate-300 dark:fill-slate-800 dark:text-slate-700'}`}
+                />
+              </span>
+            ))}
+          </div>
+          <h1 className="mt-2 text-3xl font-bold">{stars === 3 ? 'Super gemacht!' : stars === 2 ? 'Gut gemacht!' : 'Weiter so!'}</h1>
+          <p className={muted}>
+            {s.correct} von {session.items.length} gewusst{s.half > 0 && `, ${s.half} fast`}
           </p>
-          {s.wrong === 0 && <p className="mt-1 text-emerald-600 dark:text-emerald-400">Alles richtig!</p>}
-          <Reward profileId={profileId} pending={pending.current} saved={saved.current} allCorrect={s.wrong === 0} />
-          {saveError && <p className="mt-2 text-sm text-rose-600">Einige Ergebnisse konnten nicht gespeichert werden.</p>}
-        </Section>
+        </div>
+        <Reward profileId={profileId} pending={pending.current} saved={saved.current} allCorrect={s.wrong === 0} />
+        {saveError && <ErrorBox>Einige Ergebnisse konnten nicht gespeichert werden.</ErrorBox>}
         {wrong.length > 0 && (
           <button
             type="button"
@@ -327,6 +387,7 @@ function RoundView({
             onClick={() => {
               pending.current = []
               saved.current = new Set()
+              setCombo(0)
               setRound({ ...round, session: startSession(shuffle(wrong)) })
             }}
           >
@@ -347,27 +408,40 @@ function RoundView({
 
   const batch = session.items.slice(session.index, session.index + mode.batchSize)
   const progress = session.index / session.items.length
+  const last = session.results[session.results.length - 1]
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pt-1">
       <div className="flex items-center gap-3">
-        <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-          <div className="h-full bg-indigo-600 transition-all" style={{ width: `${progress * 100}%` }} />
+        <button type="button" aria-label="Runde abbrechen" className="-ml-1 flex size-9 items-center justify-center rounded-full text-slate-400" onClick={() => setRound(null)}>
+          ✕
+        </button>
+        <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
+          <div className="h-full rounded-full bg-gradient-to-r from-indigo-500 to-orange-400 transition-[width] duration-500" style={{ width: `${Math.max(4, progress * 100)}%` }} />
         </div>
-        <span className={muted}>
+        <span className="text-sm font-bold text-slate-500 tabular-nums">
           {session.index + 1}/{session.items.length}
         </span>
-        <button type="button" className={button} onClick={() => setRound(null)}>
-          Abbrechen
-        </button>
       </div>
-      <mode.Component
-        key={`${session.index}-${batch.map((i) => i.word.id + i.direction).join()}`}
-        items={batch}
-        pool={round.pool}
-        settings={settings}
-        onResults={onResults}
-      />
+      <div className="flex h-14 items-center gap-2">
+        <Mascot mood={last === 'wrong' ? 'happy' : last ? 'cheer' : 'happy'} className="w-14" />
+        {combo >= 3 ? (
+          <span key={combo} className="flex animate-pop items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-sm font-extrabold text-orange-600 dark:bg-orange-950">
+            <Icon name="flame" className="size-4" /> {combo} in Folge!
+          </span>
+        ) : (
+          <span className={`${muted} font-semibold`}>{last === 'wrong' ? 'Nicht schlimm, weiter geht’s!' : last ? 'Weiter so!' : 'Los geht’s!'}</span>
+        )}
+      </div>
+      <div key={session.index} className="animate-slide">
+        <mode.Component
+          key={`${session.index}-${batch.map((i) => i.word.id + i.direction).join()}`}
+          items={batch}
+          pool={round.pool}
+          settings={settings}
+          onResults={onResults}
+        />
+      </div>
     </div>
   )
 }
@@ -398,11 +472,40 @@ function Reward(props: { profileId: string; pending: Promise<unknown>[]; saved: 
   if (data.state !== 'ready') return null
   const { xp, levelUp, goal } = data.data
   return (
-    <div className="mt-3 space-y-1">
+    <div className="grid grid-cols-1 gap-2.5">
       {(levelUp || goal || props.allCorrect) && xp > 0 && <Confetti />}
-      <p className="font-semibold text-indigo-600 dark:text-indigo-400">+{xp} XP</p>
-      {levelUp && <p className="font-semibold">Neues Level: {levelUp}!</p>}
-      {goal && <p className="font-semibold text-emerald-600 dark:text-emerald-400">Tagesziel geschafft!</p>}
+      <div className={`${card} animate-pop flex items-center justify-between`}>
+        <span className="font-bold text-slate-500">Erfahrung</span>
+        <CountUp to={xp} className="font-display text-3xl font-bold text-indigo-600 dark:text-indigo-300" />
+      </div>
+      {levelUp && (
+        <div className="animate-pop rounded-3xl bg-gradient-to-r from-indigo-500 to-indigo-700 p-4 text-center font-display text-xl font-bold text-white">
+          Neues Level: {levelUp}!
+        </div>
+      )}
+      {goal && (
+        <div className="animate-pop rounded-3xl bg-emerald-500 p-4 text-center font-display text-xl font-bold text-white">
+          Tagesziel geschafft!
+        </div>
+      )}
     </div>
   )
+}
+
+// Zahl, die kurz hochzählt. Bei „Bewegung reduzieren" sofort der Endwert.
+function CountUp({ to, className }: { to: number; className?: string }) {
+  const [n, setN] = useState(0)
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return setN(to)
+    const start = performance.now()
+    let raf = 0
+    const tick = (t: number) => {
+      const p = Math.min(1, (t - start) / 900)
+      setN(Math.round(to * (1 - (1 - p) ** 3)))
+      if (p < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [to])
+  return <span className={className}>+{n} XP</span>
 }

@@ -164,3 +164,13 @@ a,
     visibility: hidden;
   }
 }
+
+@keyframes slide {
+  from {
+    opacity: 0;
+    transform: translateX(40px);
+  }
+}
+@theme {
+  --animate-slide: slide 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
