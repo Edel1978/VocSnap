@@ -2,7 +2,9 @@ import { Link } from 'react-router-dom'
 import { languageLabel } from '../../config/languages'
 import type { Direction } from '../../data/types'
 import { cardKey, computeStates, isDue } from '../../learn/leitner'
+import { formatDay, isoDay } from '../../learn/dates'
 import { learnedToday, wrongWordIds } from '../../learn/stats'
+import { examDates, loadExam } from '../exam'
 
 const DIRS: Direction[] = ['to_target', 'to_source']
 import { useApp } from '../AppContext'
@@ -51,7 +53,11 @@ function ProfileHome({ profileId }: { profileId: string }) {
     const due = words
       .flat()
       .filter((w) => DIRS.some((d) => isDue(states.get(cardKey(w.id, d)), intervals))).length
+    const exams = await Promise.all(
+      examDates(lessons, isoDay()).map((d) => loadExam(store, profileId, d, intervals)),
+    )
     return {
+      exams,
       lessons: lessons.map((l, i) => ({ lesson: l, count: words[i].length })),
       total: words.flat().length,
       errors,
@@ -62,7 +68,7 @@ function ProfileHome({ profileId }: { profileId: string }) {
 
   if (data.state === 'loading') return <Loading />
   if (data.state === 'error') return <ErrorBox />
-  const { lessons, total, errors, due } = data.data
+  const { lessons, total, errors, due, exams } = data.data
 
   return (
     <div className="space-y-4">
@@ -84,6 +90,23 @@ function ProfileHome({ profileId }: { profileId: string }) {
           )}
         </div>
       )}
+
+      {exams.map((e) => (
+        <Link
+          key={e.date}
+          to={`/arbeit/${e.date}`}
+          className="block rounded-2xl border border-indigo-300 bg-indigo-50 p-4 dark:border-indigo-800 dark:bg-indigo-950"
+        >
+          <span className="block font-semibold">
+            Klassenarbeit {formatDay(e.date)}
+            {e.plan.daysLeft === 0 ? ' · heute' : e.plan.daysLeft === 1 ? ' · morgen' : ` · in ${e.plan.daysLeft} Tagen`}
+          </span>
+          <span className={muted}>
+            {e.plan.openToday > 0 ? `Heute noch ${e.plan.openToday} Karten` : 'Für heute erledigt'} ·{' '}
+            {e.lessons.map((l) => l.title).join(', ')}
+          </span>
+        </Link>
+      ))}
 
       <Section
         title="Lektionen"
@@ -116,6 +139,12 @@ function ProfileHome({ profileId }: { profileId: string }) {
           </ul>
         )}
       </Section>
+
+      {lessons.length > 0 && (
+        <Link to="/arbeit" className={`${button} block py-3 text-center`}>
+          Klassenarbeit planen
+        </Link>
+      )}
 
       <p className={`${muted} px-1`}>
         Daten liegen nur auf diesem Gerät. Regelmäßig in den Einstellungen exportieren.
