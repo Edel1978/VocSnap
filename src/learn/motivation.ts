@@ -28,7 +28,7 @@ export interface Stats {
   // Tage in Folge mit mindestens einer Abfrage, bis heute oder gestern.
   streak: number
   bestStreak: number
-  // Verschiedene Wörter, die heute abgefragt wurden.
+  // Verschiedene Wörter, die heute gewusst wurden (richtig oder halb). Grundlage für das Tagesziel.
   todayWords: number
   reviews: number
   // Tage, an denen das Tagesziel erreicht wurde.
@@ -39,18 +39,22 @@ export interface Stats {
 export function computeStats(events: ReviewEvent[], dailyGoal: number, now: Date = new Date()): Stats {
   const active = events.filter((e) => e.deleted_at === null)
   const today = dayNumber(now)
-  const wordsPerDay = new Map<number, Set<string>>()
+  // Nur gewusste Wörter zählen fürs Tagesziel, aktive Tage (Streak) zählen jede Abfrage.
+  const knownPerDay = new Map<number, Set<string>>()
+  const activeDays = new Set<number>()
   let xp = 0
   let weekXp = 0
   for (const e of active) {
     const day = dayNumber(new Date(e.at))
     xp += XP[e.result]
     if (today - day < 7) weekXp += XP[e.result]
-    if (!wordsPerDay.has(day)) wordsPerDay.set(day, new Set())
-    wordsPerDay.get(day)!.add(e.word_id)
+    activeDays.add(day)
+    if (e.result === 'wrong') continue
+    if (!knownPerDay.has(day)) knownPerDay.set(day, new Set())
+    knownPerDay.get(day)!.add(e.word_id)
   }
 
-  const days = [...wordsPerDay.keys()].sort((a, b) => a - b)
+  const days = [...activeDays].sort((a, b) => a - b)
   let bestStreak = 0
   let run = 0
   for (let i = 0; i < days.length; i++) {
@@ -70,9 +74,9 @@ export function computeStats(events: ReviewEvent[], dailyGoal: number, now: Date
     level: levelInfo(xp),
     streak,
     bestStreak,
-    todayWords: wordsPerDay.get(today)?.size ?? 0,
+    todayWords: knownPerDay.get(today)?.size ?? 0,
     reviews: active.length,
-    goalDays: [...wordsPerDay.values()].filter((s) => s.size >= dailyGoal).length,
+    goalDays: [...knownPerDay.values()].filter((s) => s.size >= dailyGoal).length,
   }
 }
 
