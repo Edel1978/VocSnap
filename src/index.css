@@ -11,8 +11,9 @@
   --color-slate-100: #eef2ff;
   --color-slate-200: #e0e7ff;
   --color-slate-300: #c7d2fe;
-  --color-slate-400: #9ca3af;
-  --color-slate-500: #6b7280;
+  /* 400/500 als Textfarbe mit genug Kontrast (mind. 4,5:1 auf Weiß bzw. auf dunklen Karten). */
+  --color-slate-400: #686d86;
+  --color-slate-500: #575c72;
   --color-slate-600: #4b5563;
   --color-slate-700: #2e2b5c;
   --color-slate-800: #23204a;
@@ -28,6 +29,12 @@
   --animate-bob: bob 3.2s ease-in-out infinite;
   --animate-blink: blink 4.5s infinite;
   --animate-shake: shake 360ms ease-in-out;
+}
+
+/* Im dunklen Modus hellere Grautöne, sonst ist Text auf dunklen Karten kaum lesbar. */
+.dark {
+  --color-slate-400: #a3a8c3;
+  --color-slate-500: #a3a8c3;
 }
 
 @keyframes pop {
