@@ -14,7 +14,7 @@ import { Icon } from '../icons'
 import { Mascot } from '../Mascot'
 import { ProfileForm } from '../ProfileForm'
 import { loadStats } from '../stats'
-import { button, card, muted, primary } from '../ui'
+import { button, card, muted, primary, wordsLabel } from '../ui'
 import { useAsync } from '../useAsync'
 
 const DIRS: Direction[] = ['to_target', 'to_source']
@@ -278,7 +278,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
                         <span className="block h-full rounded-full bg-emerald-500" style={{ width: `${safe}%` }} />
                       </span>
                       <span className={`${muted} mt-1 block text-xs`}>
-                        {count} Wörter · {safe} % sicher
+                        {wordsLabel(count)} · {safe} % sicher
                       </span>
                     </span>
                     <Icon name="chevron" className="size-5 text-slate-400" />

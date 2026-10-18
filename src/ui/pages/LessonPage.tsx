@@ -8,7 +8,7 @@ import { useApp } from '../AppContext'
 import { Empty, ErrorBox, Loading, PageTitle, Section } from '../components'
 import { Icon } from '../icons'
 import { LessonForm } from '../LessonForm'
-import { button, card, danger, input, muted, primary } from '../ui'
+import { button, card, danger, input, muted, primary, wordsLabel } from '../ui'
 import { useAsync } from '../useAsync'
 import { WordForm } from '../WordForm'
 
@@ -106,7 +106,7 @@ export function LessonPage() {
           </p>
           <h1 className="mt-1 text-3xl leading-tight font-bold">{lesson.title}</h1>
           <p className="mt-1 text-sm opacity-90">
-            {words.length} Wörter · {safe} % sicher
+            {wordsLabel(words.length)} · {safe} % sicher
           </p>
           <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/25">
             <div className="h-full rounded-full bg-white transition-[width] duration-700" style={{ width: `${safe}%` }} />

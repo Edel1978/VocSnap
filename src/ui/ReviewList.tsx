@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { ScannedWord } from '../providers/types'
 import { useApp } from './AppContext'
 import { ErrorBox, Section } from './components'
-import { button, danger, input, muted, primary } from './ui'
+import { button, danger, input, muted, primary, wordsLabel } from './ui'
 
 const small = `${input} px-2 py-1 text-sm`
 
@@ -115,7 +115,7 @@ export function ReviewList(props: {
           Zurück
         </button>
         <button type="button" className={`${primary} flex-1`} disabled={valid.length === 0 || busy} onClick={save}>
-          {valid.length} Wörter speichern
+          {wordsLabel(valid.length)} speichern
         </button>
       </div>
     </div>
