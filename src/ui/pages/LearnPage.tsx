@@ -18,7 +18,7 @@ import { formatDay } from '../../learn/dates'
 import { computeStats, rankOf } from '../../learn/motivation'
 import { wrongWordIds } from '../../learn/stats'
 import { loadExam } from '../exam'
-import { MODES, type ModeId } from '../../modes/modes'
+import { MODES, modeEnabled, type ModeId } from '../../modes/modes'
 import { LEARNING_MODES } from '../../modes/registry'
 import type { ModeResult } from '../../modes/types'
 import { useApp } from '../AppContext'
@@ -43,6 +43,7 @@ const MODE_LOOK: Record<ModeId, { icon: IconName; color: string; text: string }>
   typing: { icon: 'keyboard', color: '#10B981', text: 'Antwort eintippen' },
   listen_write: { icon: 'ear', color: '#EC4899', text: 'Anhören und schreiben' },
   matching: { icon: 'puzzle', color: '#0EA5E9', text: 'Paare zuordnen' },
+  speak: { icon: 'mic', color: '#8B5CF6', text: 'Wort ins Mikrofon sagen' },
 }
 
 interface Round {
@@ -66,7 +67,7 @@ function Learn() {
   const [round, setRound] = useState<Round | null>(null)
   const started = useRef(false)
 
-  const [data] = useAsync(async () => {
+  const [data, reload] = useAsync(async () => {
     if (!profile) return null
     const lessons = await store.listLessons(profile.id)
     lessons.sort((a, b) => a.created_at.localeCompare(b.created_at))
@@ -78,7 +79,8 @@ function Learn() {
     // „Weiterlernen": sofort mit dem zuletzt gewählten Modus und allen fälligen Karten starten.
     let quick: Round | null = null
     if (quickStart) {
-      const mode = LEARNING_MODES[settings.learnMode] ? settings.learnMode : settings.modeOrder.find((m) => LEARNING_MODES[m])
+      const usable = (m: ModeId) => !!LEARNING_MODES[m] && modeEnabled(m, settings)
+      const mode = usable(settings.learnMode) ? settings.learnMode : settings.modeOrder.find(usable)
       const lessonOf = new Map(lessons.map((l) => [l.id, l]))
       const pool = words.flat()
       const items = buildItems(pool, settings.learnDirection, {
@@ -113,7 +115,12 @@ function Learn() {
   if (data.state === 'error' || !data.data) return <ErrorBox />
 
   if (round) {
-    return <RoundView profileId={profile.id} round={round} setRound={setRound} />
+    // Nach der Runde Lernstand neu laden, sonst zeigt die Auswahl noch die alten fälligen Karten.
+    const changeRound = (r: Round | null) => {
+      setRound(r)
+      if (!r) reload()
+    }
+    return <RoundView profileId={profile.id} round={round} setRound={changeRound} />
   }
 
   return (
@@ -148,7 +155,8 @@ function Setup(props: {
   )
   const { updateSettings } = useApp()
   const [dir, setDir] = useState<DirectionChoice>(planKeys ? 'both' : settings.learnDirection)
-  const available = settings.modeOrder.filter((m) => LEARNING_MODES[m])
+  const shownModes = settings.modeOrder.filter((m) => modeEnabled(m, settings))
+  const available = shownModes.filter((m) => LEARNING_MODES[m])
   const [mode, setMode] = useState<ModeId | undefined>(
     available.includes(settings.learnMode) ? settings.learnMode : available[0],
   )
@@ -232,7 +240,7 @@ function Setup(props: {
       <section>
         <h2 className="mb-2.5 text-xl font-semibold">Lernmodus wählen</h2>
         <div className="grid grid-cols-2 gap-2.5">
-          {settings.modeOrder.map((id, i) => {
+          {shownModes.map((id, i) => {
             const meta = MODE_LOOK[id]
             const ready = Boolean(LEARNING_MODES[id])
             return (
@@ -244,7 +252,7 @@ function Setup(props: {
                 style={{ animationDelay: `${60 + i * 50}ms` }}
                 className={`${card} ${press} flex animate-pop flex-col items-start gap-2 text-left disabled:opacity-50 ${
                   mode === id ? 'ring-3 ring-indigo-400' : ''
-                } ${i === 0 && settings.modeOrder.length % 2 === 1 ? 'col-span-2 flex-row items-center' : ''}`}
+                } ${i === 0 && shownModes.length % 2 === 1 ? 'col-span-2 flex-row items-center' : ''}`}
               >
                 <span className="flex size-11 items-center justify-center rounded-2xl text-white" style={{ backgroundColor: meta.color }}>
                   <Icon name={meta.icon} />
@@ -413,7 +421,12 @@ function RoundView({
   return (
     <div className="space-y-4 pt-1">
       <div className="flex items-center gap-3">
-        <button type="button" aria-label="Runde abbrechen" className="-ml-1 flex size-9 items-center justify-center rounded-full text-slate-400" onClick={() => setRound(null)}>
+        <button
+          type="button"
+          aria-label="Runde abbrechen"
+          className="-ml-2 flex size-11 items-center justify-center rounded-full text-xl text-slate-500 active:bg-slate-200 dark:active:bg-slate-800"
+          onClick={() => (session.index === 0 || confirm('Runde abbrechen? Bisherige Antworten bleiben gespeichert.')) && setRound(null)}
+        >
           ✕
         </button>
         <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">

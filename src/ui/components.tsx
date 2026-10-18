@@ -129,9 +129,16 @@ export function Loading() {
 
 export function ErrorBox({ children }: { children?: ReactNode }) {
   return (
-    <p className="rounded-2xl bg-rose-50 p-3 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
-      {children ?? 'Da ist etwas schiefgegangen. Bitte Seite neu laden.'}
-    </p>
+    <div className="rounded-2xl bg-rose-50 p-3 text-rose-700 dark:bg-rose-950 dark:text-rose-300">
+      {children ?? (
+        <>
+          Da ist etwas schiefgegangen.{' '}
+          <button type="button" className="font-bold underline" onClick={() => location.reload()}>
+            Neu laden
+          </button>
+        </>
+      )}
+    </div>
   )
 }
 

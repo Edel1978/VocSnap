@@ -28,6 +28,8 @@ export interface Store {
   listWords(lessonId: string): Promise<Word[]>
   getWord(id: string): Promise<Word | undefined>
   createWord(input: WordInput): Promise<Word>
+  // Mehrere Wörter auf einmal: alle oder keins.
+  createWords(inputs: WordInput[]): Promise<Word[]>
   updateWord(id: string, patch: Partial<WordInput>): Promise<Word>
   deleteWord(id: string): Promise<void>
 

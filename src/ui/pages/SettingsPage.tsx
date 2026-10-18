@@ -1,6 +1,7 @@
 import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import { PROVIDERS } from '../../config/providers'
-import { MODES } from '../../modes/modes'
+import { MODES, modeEnabled } from '../../modes/modes'
+import { canListen } from '../../modes/speak/recognition'
 import type { Settings } from '../../settings/settings'
 import { useApp } from '../AppContext'
 import { Choice, ListRow, PageTitle, Section, Toggle } from '../components'
@@ -62,10 +63,12 @@ export function SettingsGroupPage() {
 
 function LearnSettings() {
   const { settings, updateSettings } = useApp()
+  // Ausgeblendete Modi (z. B. Aussprache, wenn aus) bleiben hinten angehängt.
+  const visible = settings.modeOrder.filter((m) => modeEnabled(m, settings))
   const move = (i: number, d: -1 | 1) => {
-    const order = [...settings.modeOrder]
+    const order = [...visible]
     ;[order[i], order[i + d]] = [order[i + d], order[i]]
-    updateSettings({ modeOrder: order })
+    updateSettings({ modeOrder: [...order, ...settings.modeOrder.filter((m) => !order.includes(m))] })
   }
   const setLeitnerDays = (i: number, n: number) => {
     const next = [...settings.leitnerIntervals]
@@ -103,9 +106,22 @@ function LearnSettings() {
         </p>
       </Section>
 
+      <Section title="Aussprache üben">
+        <Toggle
+          label="Lernmodus „Aussprache“"
+          hint={
+            canListen()
+              ? 'Du sagst Wörter ins Mikrofon, die App prüft die Aussprache. Braucht Internet und Zugriff aufs Mikrofon.'
+              : 'Dieser Browser kann keine Sprache erkennen. Am besten klappt es mit Chrome.'
+          }
+          checked={settings.pronunciation}
+          onChange={(pronunciation) => updateSettings({ pronunciation })}
+        />
+      </Section>
+
       <Section title="Reihenfolge der Lernmodi">
         <ol className="space-y-2">
-          {settings.modeOrder.map((id, i) => (
+          {visible.map((id, i) => (
             <li key={id} className="flex items-center gap-2">
               <span className="w-5 text-sm font-bold text-slate-400">{i + 1}</span>
               <span className="flex-1 font-semibold">{MODES.find((m) => m.id === id)?.label}</span>
@@ -115,7 +131,7 @@ function LearnSettings() {
               <button
                 type="button"
                 className={button}
-                disabled={i === settings.modeOrder.length - 1}
+                disabled={i === visible.length - 1}
                 onClick={() => move(i, 1)}
                 aria-label="nach unten"
               >

@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { ErrorBox } from './components'
 import { input, primary } from './ui'
 
 // Platzhalter-Avatare, bis es eigene Grafiken gibt.
@@ -27,14 +28,18 @@ export function ProfileForm({ label, onSubmit }: { label: string; onSubmit: (nam
   const [name, setName] = useState('')
   const [avatar, setAvatar] = useState(() => AVATARS[Math.floor(Math.random() * AVATARS.length)])
   const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!name.trim()) return
     setBusy(true)
+    setFailed(false)
     try {
       await onSubmit(name.trim(), avatar)
       setName('')
+    } catch {
+      setFailed(true)
     } finally {
       setBusy(false)
     }
@@ -54,6 +59,7 @@ export function ProfileForm({ label, onSubmit }: { label: string; onSubmit: (nam
       <button type="submit" className={`${primary} w-full`} disabled={!name.trim() || busy}>
         {label}
       </button>
+      {failed && <ErrorBox>Speichern hat nicht geklappt. Bitte nochmal versuchen.</ErrorBox>}
     </form>
   )
 }

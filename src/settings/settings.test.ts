@@ -40,7 +40,7 @@ describe('parseSettings', () => {
 
   it('ergänzt fehlende Modi und entfernt unbekannte', () => {
     const s = parseSettings({ modeOrder: ['matching', 'typing', 'typing', 'foo'] })
-    expect(s.modeOrder).toEqual(['matching', 'typing', 'flashcard', 'multiple_choice', 'listen_write'])
+    expect(s.modeOrder).toEqual(['matching', 'typing', 'flashcard', 'multiple_choice', 'listen_write', 'speak'])
   })
 })
 
@@ -63,6 +63,11 @@ describe('Lernvorgaben', () => {
   it('verwirft Unbekanntes', () => {
     const s = parseSettings({ learnMode: 'x', learnDirection: 'quer', haptics: 'ja' })
     expect([s.learnMode, s.learnDirection, s.haptics]).toEqual(['flashcard', 'to_target', true])
+  })
+
+  it('Aussprache ist standardmäßig aus', () => {
+    expect(parseSettings({}).pronunciation).toBe(false)
+    expect(parseSettings({ pronunciation: true }).pronunciation).toBe(true)
   })
 
   it('merkt sich den Stand der Einführung', () => {

@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom'
 import { languageColor, languageLabel } from '../../config/languages'
+import { backupDue, daysSince } from '../../data/backup'
 import type { Direction } from '../../data/types'
 import { addDays, formatDay, isoDay } from '../../learn/dates'
 import { cardKey, computeStates, dayNumber, isDue } from '../../learn/leitner'
@@ -13,7 +14,7 @@ import { Icon } from '../icons'
 import { Mascot } from '../Mascot'
 import { ProfileForm } from '../ProfileForm'
 import { loadStats } from '../stats'
-import { button, card, muted, primary } from '../ui'
+import { button, card, muted, primary, wordsLabel } from '../ui'
 import { useAsync } from '../useAsync'
 
 const DIRS: Direction[] = ['to_target', 'to_source']
@@ -230,6 +231,21 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
         </Link>
       </div>
 
+      {backupDue(settings.lastBackup, total) && (
+        <Link to="/einstellungen/daten" className={`${tile} flex items-center gap-3 border-2 border-amber-300 dark:border-amber-700`}>
+          <span className="flex size-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 dark:bg-amber-950">
+            <Icon name="database" />
+          </span>
+          <span className="min-w-0 flex-1">
+            <b className="block font-display font-semibold">Zeit für eine Sicherung</b>
+            <span className={`${muted} block text-sm`}>
+              {settings.lastBackup ? `Letzte vor ${daysSince(settings.lastBackup)} Tagen.` : 'Deine Wörter sind noch nicht gesichert.'} Tippe hier.
+            </span>
+          </span>
+          <Icon name="chevron" className="size-5 text-slate-400" />
+        </Link>
+      )}
+
       {errors > 0 && (
         <Link to="/lernen?fehler=1" className={`${button} block py-3 text-center`}>
           Fehler wiederholen ({errors})
@@ -262,7 +278,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
                         <span className="block h-full rounded-full bg-emerald-500" style={{ width: `${safe}%` }} />
                       </span>
                       <span className={`${muted} mt-1 block text-xs`}>
-                        {count} Wörter · {safe} % sicher
+                        {wordsLabel(count)} · {safe} % sicher
                       </span>
                     </span>
                     <Icon name="chevron" className="size-5 text-slate-400" />

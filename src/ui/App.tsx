@@ -1,5 +1,7 @@
+import type { ReactNode } from 'react'
 import { HashRouter, Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { AppProvider, useApp } from './AppContext'
+import { ErrorBoundary } from './ErrorBoundary'
 import { Icon, type IconName } from './icons'
 import { Logo } from './Logo'
 import { AchievementsPage } from './pages/AchievementsPage'
@@ -13,6 +15,7 @@ import { ScanPickPage } from './pages/ScanPickPage'
 import { Splash } from './Splash'
 import { SettingsGroupPage, SettingsPage } from './pages/SettingsPage'
 import { Tour } from './tour/Tour'
+import { UpdateWatcher } from './UpdateWatcher'
 
 const TABS: { to: string; label: string; icon: IconName }[] = [
   { to: '/', label: 'Start', icon: 'home' },
@@ -53,6 +56,11 @@ function Header() {
   )
 }
 
+// Beim Seitenwechsel neu anfangen, damit ein Fehler nicht die ganze App blockiert.
+function ErrorBoundaryForPath({ children }: { children: ReactNode }) {
+  return <ErrorBoundary key={useLocation().pathname}>{children}</ErrorBoundary>
+}
+
 export function App() {
   return (
     <AppProvider>
@@ -65,22 +73,24 @@ export function App() {
         <div className="mx-auto flex min-h-dvh max-w-xl flex-col">
           <Header />
           <main className="flex-1 px-4 pb-28">
-            <Routes>
-              <Route path="/" element={<HomePage />} />
-              <Route path="/profile" element={<Navigate to="/einstellungen/profil" replace />} />
-              <Route path="/scan" element={<ScanPickPage />} />
-              <Route path="/lektion/neu" element={<NewLessonPage />} />
-              <Route path="/lektion/:id" element={<LessonPage />} />
-              <Route path="/lektion/:id/einfuegen" element={<PasteImportPage />} />
-              <Route path="/lektion/:id/scan" element={<ScanPage />} />
-              <Route path="/lernen" element={<LearnPage />} />
-              <Route path="/erfolge" element={<AchievementsPage />} />
-              <Route path="/arbeit" element={<ExamEditPage />} />
-              <Route path="/arbeit/:date" element={<ExamPage />} />
-              <Route path="/einstellungen" element={<SettingsPage />} />
-              <Route path="/einstellungen/:group" element={<SettingsGroupPage />} />
-              <Route path="*" element={<HomePage />} />
-            </Routes>
+            <ErrorBoundaryForPath>
+              <Routes>
+                <Route path="/" element={<HomePage />} />
+                <Route path="/profile" element={<Navigate to="/einstellungen/profil" replace />} />
+                <Route path="/scan" element={<ScanPickPage />} />
+                <Route path="/lektion/neu" element={<NewLessonPage />} />
+                <Route path="/lektion/:id" element={<LessonPage />} />
+                <Route path="/lektion/:id/einfuegen" element={<PasteImportPage />} />
+                <Route path="/lektion/:id/scan" element={<ScanPage />} />
+                <Route path="/lernen" element={<LearnPage />} />
+                <Route path="/erfolge" element={<AchievementsPage />} />
+                <Route path="/arbeit" element={<ExamEditPage />} />
+                <Route path="/arbeit/:date" element={<ExamPage />} />
+                <Route path="/einstellungen" element={<SettingsPage />} />
+                <Route path="/einstellungen/:group" element={<SettingsGroupPage />} />
+                <Route path="*" element={<HomePage />} />
+              </Routes>
+            </ErrorBoundaryForPath>
           </main>
           <nav data-tour="nav" className="fixed inset-x-0 bottom-0 bg-white/90 px-2 pt-1.5 pb-[max(0.5rem,env(safe-area-inset-bottom))] shadow-[0_-6px_20px_-12px_rgb(79_70_229/0.35)] backdrop-blur dark:bg-slate-900/90">
             <div className="mx-auto flex max-w-xl gap-1">
@@ -94,6 +104,7 @@ export function App() {
           </nav>
         </div>
         <Tour />
+        <UpdateWatcher />
       </HashRouter>
     </AppProvider>
   )

@@ -11,3 +11,6 @@ export const muted = 'text-sm text-slate-500 dark:text-slate-400'
 export const heading = 'mb-3 font-display text-lg font-semibold text-indigo-950 dark:text-slate-100'
 export const chosen = 'bg-indigo-600 text-white shadow-press-indigo'
 export const choice = 'bg-slate-100 dark:bg-slate-800'
+
+// „1 Wort", „3 Wörter".
+export const wordsLabel = (n: number) => `${n} ${n === 1 ? 'Wort' : 'Wörter'}`

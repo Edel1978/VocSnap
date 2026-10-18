@@ -8,7 +8,7 @@ import { useApp } from '../AppContext'
 import { Empty, ErrorBox, Loading, PageTitle, Section } from '../components'
 import { Icon } from '../icons'
 import { LessonForm } from '../LessonForm'
-import { button, card, danger, input, muted, primary } from '../ui'
+import { button, card, danger, input, muted, primary, wordsLabel } from '../ui'
 import { useAsync } from '../useAsync'
 import { WordForm } from '../WordForm'
 
@@ -41,6 +41,8 @@ export function LessonPage() {
   const [editingWord, setEditingWord] = useState<string | null>(null)
   const [tab, setTab] = useState<'words' | 'add'>('words')
   const [query, setQuery] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [saveError, setSaveError] = useState(false)
   const [data, reload] = useAsync(async () => {
     const lesson = await store.getLesson(id)
     const words = lesson ? await store.listWords(id) : []
@@ -104,7 +106,7 @@ export function LessonPage() {
           </p>
           <h1 className="mt-1 text-3xl leading-tight font-bold">{lesson.title}</h1>
           <p className="mt-1 text-sm opacity-90">
-            {words.length} Wörter · {safe} % sicher
+            {wordsLabel(words.length)} · {safe} % sicher
           </p>
           <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/25">
             <div className="h-full rounded-full bg-white transition-[width] duration-700" style={{ width: `${safe}%` }} />
@@ -141,15 +143,24 @@ export function LessonPage() {
             <button
               type="button"
               className={`${button} flex w-full items-center justify-center gap-2 py-3`}
+              disabled={busy}
               onClick={async () => {
-                for (const w of examples) await store.createWord({ ...w, lesson_id: lesson.id })
-                setTab('words')
-                reload()
+                setBusy(true)
+                try {
+                  await store.createWords(examples.map((w) => ({ ...w, lesson_id: lesson.id })))
+                  setTab('words')
+                  reload()
+                } catch {
+                  setSaveError(true)
+                } finally {
+                  setBusy(false)
+                }
               }}
             >
               <Icon name="sparkle" className="size-5 text-orange-500" /> Mit Beispielwörtern ausprobieren
             </button>
           )}
+          {saveError && <ErrorBox>Die Beispielwörter konnten nicht gespeichert werden.</ErrorBox>}
           <div className="grid grid-cols-2 gap-2">
             <Link to={`/lektion/${lesson.id}/scan`} className={`${button} flex items-center justify-center gap-2 py-3`}>
               <Icon name="camera" className="size-5" /> Foto scannen

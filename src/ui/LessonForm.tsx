@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react'
 import { LANGUAGES } from '../config/languages'
+import { ErrorBox } from './components'
 import { input, primary } from './ui'
 
 export interface LessonFields {
@@ -11,13 +12,17 @@ export interface LessonFields {
 export function LessonForm(props: { initial?: LessonFields; submitLabel: string; onSubmit: (l: LessonFields) => Promise<void> }) {
   const [l, setL] = useState<LessonFields>(props.initial ?? { title: '', source_lang: 'en', target_lang: 'de' })
   const [busy, setBusy] = useState(false)
+  const [failed, setFailed] = useState(false)
 
   const submit = async (e: FormEvent) => {
     e.preventDefault()
     if (!l.title.trim()) return
     setBusy(true)
+    setFailed(false)
     try {
       await props.onSubmit({ ...l, title: l.title.trim() })
+    } catch {
+      setFailed(true)
     } finally {
       setBusy(false)
     }
@@ -52,6 +57,7 @@ export function LessonForm(props: { initial?: LessonFields; submitLabel: string;
       <button type="submit" className={`${primary} w-full py-2`} disabled={!l.title.trim() || busy}>
         {props.submitLabel}
       </button>
+      {failed && <ErrorBox>Speichern hat nicht geklappt. Bitte nochmal versuchen.</ErrorBox>}
     </form>
   )
 }
