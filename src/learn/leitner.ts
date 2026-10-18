@@ -5,6 +5,7 @@ export const BOXES = 5
 // Lernstand einer Karte (Wort + Richtung). Neue Karten haben keinen Eintrag und gelten als Fach 1, fällig.
 export interface CardState {
   box: number
+  firstAt: string
   lastAt: string
 }
 
@@ -24,8 +25,8 @@ export function computeStates(events: ReviewEvent[]): Map<string, CardState> {
   const sorted = events.filter((e) => e.deleted_at === null).sort((a, b) => a.at.localeCompare(b.at))
   for (const e of sorted) {
     const key = cardKey(e.word_id, e.direction)
-    const box = states.get(key)?.box ?? 1
-    states.set(key, { box: nextBox(box, e.result), lastAt: e.at })
+    const prev = states.get(key)
+    states.set(key, { box: nextBox(prev?.box ?? 1, e.result), firstAt: prev?.firstAt ?? e.at, lastAt: e.at })
   }
   return states
 }

@@ -1,5 +1,6 @@
 import { HashRouter, Link, NavLink, Route, Routes } from 'react-router-dom'
 import { AppProvider, useApp } from './AppContext'
+import { ExamEditPage, ExamPage } from './pages/ExamPages'
 import { HomePage } from './pages/HomePage'
 import { LearnPage } from './pages/LearnPage'
 import { LessonPage, NewLessonPage } from './pages/LessonPage'
@@ -44,6 +45,8 @@ export function App() {
               <Route path="/lektion/:id/einfuegen" element={<PasteImportPage />} />
               <Route path="/lektion/:id/scan" element={<ScanPage />} />
               <Route path="/lernen" element={<LearnPage />} />
+              <Route path="/arbeit" element={<ExamEditPage />} />
+              <Route path="/arbeit/:date" element={<ExamPage />} />
               <Route path="/einstellungen" element={<SettingsPage />} />
               <Route path="*" element={<HomePage />} />
             </Routes>

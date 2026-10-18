@@ -14,7 +14,9 @@ import {
   type StudyItem,
 } from '../../learn/session'
 import { cardKey, computeStates, isDue, type CardState } from '../../learn/leitner'
+import { formatDay } from '../../learn/dates'
 import { wrongWordIds } from '../../learn/stats'
+import { loadExam } from '../exam'
 import { MODES, type ModeId } from '../../modes/modes'
 import { LEARNING_MODES } from '../../modes/registry'
 import type { ModeResult } from '../../modes/types'
@@ -42,10 +44,10 @@ export function LearnPage() {
 }
 
 function Learn() {
-  const { store, profile } = useApp()
+  const { store, profile, settings } = useApp()
   const [params] = useSearchParams()
   const errorsOnly = params.get('fehler') === '1'
-  const preselected = params.get('lektionen')?.split(',').filter(Boolean)
+  const examDate = params.get('arbeit')
   const [round, setRound] = useState<Round | null>(null)
 
   const [data] = useAsync(async () => {
@@ -55,14 +57,18 @@ function Learn() {
     const words = await Promise.all(lessons.map((l) => store.listWords(l.id)))
     const events = await store.listReviewEvents(profile.id)
     const wrong = errorsOnly ? wrongWordIds(events) : null
+    const exam = examDate ? await loadExam(store, profile.id, examDate, settings.leitnerIntervals) : null
     return {
       states: computeStates(events),
+      // Erst die heute noch offenen Karten, danach zum Nachüben alle geplanten.
+      planKeys: exam ? (exam.plan.openToday > 0 ? exam.plan.openKeys : exam.plan.todayKeys) : undefined,
+      preselected: exam ? exam.lessons.map((l) => l.id) : params.get('lektionen')?.split(',').filter(Boolean),
       lessons: lessons.map((lesson, i) => ({
         lesson,
         words: wrong ? words[i].filter((w) => wrong.has(w.id)) : words[i],
       })),
     }
-  }, [store, profile, errorsOnly])
+  }, [store, profile, errorsOnly, examDate, settings.leitnerIntervals])
 
   if (!profile) return <ErrorBox>Bitte zuerst ein Profil anlegen.</ErrorBox>
   if (data.state === 'loading') return <Loading />
@@ -77,7 +83,9 @@ function Learn() {
       lessons={data.data.lessons.filter((x) => x.words.length > 0)}
       states={data.data.states}
       errorsOnly={errorsOnly}
-      preselected={preselected}
+      preselected={data.data.preselected}
+      planKeys={data.data.planKeys}
+      examDate={examDate}
       onStart={(mode, items, pool) => setRound({ mode, session: startSession(items), pool })}
     />
   )
@@ -88,15 +96,19 @@ function Setup(props: {
   states: Map<string, CardState>
   errorsOnly: boolean
   preselected?: string[]
+  // Klassenarbeits-Plan: nur die heute geplanten Karten.
+  planKeys?: Set<string>
+  examDate?: string | null
   onStart: (mode: ModeId, items: StudyItem[], pool: Word[]) => void
 }) {
   const { settings } = useApp()
   // Fehlerrunden und gezielt gewählte Lektionen fragen alles ab, sonst nur fällige Karten.
   const [dueOnly, setDueOnly] = useState(!props.errorsOnly && !props.preselected)
+  const planKeys = props.planKeys
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(props.preselected ?? props.lessons.map((x) => x.lesson.id)),
   )
-  const [dir, setDir] = useState<DirectionChoice>('to_target')
+  const [dir, setDir] = useState<DirectionChoice>(planKeys ? 'both' : 'to_target')
   const available = settings.modeOrder.filter((m) => LEARNING_MODES[m])
   const [mode, setMode] = useState<ModeId | undefined>(available[0])
 
@@ -121,7 +133,8 @@ function Setup(props: {
     return { source: l?.source_lang ?? '', target: l?.target_lang ?? '' }
   }
   const due = (i: StudyItem) => isDue(props.states.get(cardKey(i.word.id, i.direction)), settings.leitnerIntervals)
-  const items = buildItems(words, dir, { langs, filter: dueOnly ? due : undefined })
+  const inPlan = (i: StudyItem) => planKeys!.has(cardKey(i.word.id, i.direction))
+  const items = buildItems(words, dir, { langs, filter: planKeys ? inPlan : dueOnly ? due : undefined })
   const toggle = (id: string) => {
     const next = new Set(selected)
     if (next.has(id)) next.delete(id)
@@ -132,6 +145,7 @@ function Setup(props: {
   return (
     <div className="space-y-4">
       {props.errorsOnly && <h2 className="text-lg font-semibold">Fehler wiederholen</h2>}
+      {props.examDate && <h2 className="text-lg font-semibold">Klassenarbeit {formatDay(props.examDate)}: heute dran</h2>}
       <Section title="Lektionen">
         <ul className="space-y-1">
           {props.lessons.map(({ lesson, words }) => (
@@ -187,16 +201,21 @@ function Setup(props: {
           })}
         </div>
       </Section>
-      <label className="flex items-center gap-3 px-1">
-        <input
-          type="checkbox"
-          className="size-5 accent-indigo-600"
-          checked={dueOnly}
-          onChange={(e) => setDueOnly(e.target.checked)}
-        />
-        <span>Nur fällige Wörter</span>
-      </label>
-      {items.length === 0 && dueOnly && words.length > 0 && (
+      {!planKeys && (
+        <label className="flex items-center gap-3 px-1">
+          <input
+            type="checkbox"
+            className="size-5 accent-indigo-600"
+            checked={dueOnly}
+            onChange={(e) => setDueOnly(e.target.checked)}
+          />
+          <span>Nur fällige Wörter</span>
+        </label>
+      )}
+      {items.length === 0 && planKeys && (
+        <p className={`${muted} px-1`}>Für heute ist im Plan nichts mehr offen.</p>
+      )}
+      {items.length === 0 && !planKeys && dueOnly && words.length > 0 && (
         <p className={`${muted} px-1`}>Heute ist hier nichts fällig. Haken entfernen, um trotzdem zu üben.</p>
       )}
       <button
