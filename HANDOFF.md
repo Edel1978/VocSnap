@@ -16,7 +16,8 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | E4 Klassenarbeit und Matching | fertig | Lernplan zum Datum der Arbeit (Tagesplan, Generalprobe), Matching-Spiel |
 | R1 Redesign Stil A3 | fertig | Farbschema, Schriften, Snappy, Startseite, Logo 4a, Start-Animation |
 | R2 Seiten und Extras | fertig | Lernen, Erfolge, Mehr, Lektion neu; Snappy-Tipps, Einführung, Töne, leere Zustände |
-| R3 Belohnungen und Anleitung | in Arbeit | Neue Level-Kurve mit Rängen, Abzeichen in Stufen, Streak-Schutz, „Tippen für Ton“ beim Start, ausführliche Anleitung. Wartet auf Freigabe durch den Nutzer |
+| R3 Belohnungen und Anleitung | fertig | Neue Level-Kurve mit Rängen, Abzeichen in Stufen, Streak-Schutz |
+| R4 Geführte Einführung | in Arbeit | Führung durch die echte App (Spotlight, Snappy-Sprechblase), Beispielwörter, Startton ohne Knopf. Wartet auf Freigabe durch den Nutzer |
 | E5 Motivation und Feinschliff | fertig | XP, Level, Streak, Tagesziel, Abzeichen, Bestenliste, Konfetti, Avatare, App-Icons, Offline (PWA), Navigation mit Icons |
 
 Status: offen / in Arbeit / fertig.
@@ -40,9 +41,9 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-Stand 2026-10-18: R3 ist gebaut und gepusht, der Nutzer prüft die Screenshots. Pull Request erst nach seiner Freigabe.
+Stand 2026-10-18: R4 ist gebaut und gepusht, der Nutzer prüft die Screenshots. Pull Request erst nach seiner Freigabe.
 
-1. Rückmeldung zu R3 einarbeiten, dann Pull Request.
+1. Rückmeldung zu R4 einarbeiten, dann Pull Request.
 2. Verbrauchtes Guthaben nach E5 und dem Redesign nachtragen.
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
@@ -144,7 +145,9 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Erfolge: Level-Ring, Kennzahlen, Lern-Kalender (12 Wochen, Abfragen pro Tag), Abzeichen mit Fortschritt, Bestenliste als Podest.
 - Lektion: farbiger Kopf in Sprachfarbe, Reiter „Wörter"/„Hinzufügen", Suche, Punkte je Wort = Fach (schwächere Richtung).
 - Snappy-Tipps (`src/learn/tips.ts`): Sprechblase auf der Startseite je nach Tagesziel, Serie, gestern und Uhrzeit.
-- Anleitung (8 Schritte: Lektion, Foto-Scan, Lernmodi, Fächer, Klassenarbeit, Erfolge, Daten) beim ersten Start, erneut über „Mehr → Anleitung" oder „Über VocSnap".
+- Geführte Einführung (`src/ui/tour/`): dunkelt die Seite ab, lässt nur das markierte Element (`data-tour`) bedienbar und erklärt es in einer Snappy-Sprechblase. Schritte sind Daten in `steps.ts` (Seite, Ziel, Text, wie es weitergeht: Knopf, Tipp aufs Ziel, Seitenwechsel oder Erscheinen des nächsten Ziels). Bei Formularen und in der Lernrunde bleibt die Seite frei bedienbar.
+- Neu ohne Lektionen: Lektion anlegen, Wörter hinzufügen (oder Beispielwörter), Lektion lernen, Runde, Ergebnis, Startseite, Navigation. Mit vorhandenen Lektionen: kurzer Rundgang über die Startseite. Start nach dem ersten Profil, neu über „Mehr → Anleitung" oder „Über VocSnap". Stand liegt in den Einstellungen (`tour`), abseits der Schritte erscheint „Anleitung pausiert · Beenden".
+- Beispielwörter (`src/data/examples.ts`): erfundene Grundwörter Englisch/Französisch ↔ Deutsch, Knopf nur in leeren Lektionen.
 - Töne per Web Audio (keine Dateien): Start-Melodie mit Auslöser-Klick, Töne bei richtig/halb/falsch und Erfolg. Abschaltbar unter Darstellung. Browser spielen Ton oft erst nach einer Berührung (z. B. Samsung). Ist der Ton gesperrt, bleibt der Start still (Wunsch des Nutzers, kein Knopf). Der gesperrte Audio-Kontext wird verworfen, damit die Melodie nicht später unpassend erklingt.
 - Fehlertoleranz (offene Punkte aus der SPEC vorläufig so entschieden, änderbar in `tolerance.ts`):
   - Ein Buchstabe daneben ist halb, erst ab drei Buchstaben im Lösungswort.
