@@ -1,6 +1,7 @@
 import { HashRouter, Link, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { AppProvider, useApp } from './AppContext'
 import { Icon, type IconName } from './icons'
+import { Logo } from './Logo'
 import { AchievementsPage } from './pages/AchievementsPage'
 import { ExamEditPage, ExamPage } from './pages/ExamPages'
 import { HomePage } from './pages/HomePage'
@@ -33,8 +34,11 @@ function Header() {
   if (useLocation().pathname === '/') return null
   return (
     <header className="flex items-center justify-between px-4 pt-4 pb-2">
-      <Link to="/" className="font-display text-2xl font-bold">
-        Voc<span className="text-orange-500">Snap</span>
+      <Link to="/" className="flex items-center gap-2 font-display text-2xl font-bold">
+        <Logo className="size-9 drop-shadow" />
+        <span>
+          Voc<span className="text-orange-500">Snap</span>
+        </span>
       </Link>
       {profile && (
         <Link
