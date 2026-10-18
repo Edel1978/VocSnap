@@ -67,7 +67,7 @@ function Learn() {
   const [round, setRound] = useState<Round | null>(null)
   const started = useRef(false)
 
-  const [data] = useAsync(async () => {
+  const [data, reload] = useAsync(async () => {
     if (!profile) return null
     const lessons = await store.listLessons(profile.id)
     lessons.sort((a, b) => a.created_at.localeCompare(b.created_at))
@@ -115,7 +115,12 @@ function Learn() {
   if (data.state === 'error' || !data.data) return <ErrorBox />
 
   if (round) {
-    return <RoundView profileId={profile.id} round={round} setRound={setRound} />
+    // Nach der Runde Lernstand neu laden, sonst zeigt die Auswahl noch die alten fälligen Karten.
+    const changeRound = (r: Round | null) => {
+      setRound(r)
+      if (!r) reload()
+    }
+    return <RoundView profileId={profile.id} round={round} setRound={changeRound} />
   }
 
   return (
