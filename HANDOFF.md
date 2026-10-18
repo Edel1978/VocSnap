@@ -14,7 +14,8 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | E2b Anbieter-Kette | fertig | Gemini → Groq → Tesseract mit automatischem Wechsel, Groq als zweiter Anbieter, mehrere Seiten pro Scan |
 | E3 Lernmodi | fertig | Leitner (5 Fächer, fällige Karten), Multiple Choice, Tippen, Hören und Schreiben, Fehlertoleranz |
 | E4 Klassenarbeit und Matching | fertig | Lernplan zum Datum der Arbeit (Tagesplan, Generalprobe), Matching-Spiel |
-| R1 Redesign Stil A3 | in Arbeit | Neues Farbschema, Schriften, Maskottchen „Snappy", neue Startseite, Weiterlernen mit Sofortstart, Animationen, Vibration. Weitere Seiten folgen |
+| R1 Redesign Stil A3 | fertig | Farbschema, Schriften, Snappy, Startseite, Logo 4a, Start-Animation |
+| R2 Seiten und Extras | in Arbeit | Lernen, Erfolge, Mehr, Lektion neu; Snappy-Tipps, Einführung, Töne, leere Zustände. Wartet auf Freigabe durch den Nutzer |
 | E5 Motivation und Feinschliff | fertig | XP, Level, Streak, Tagesziel, Abzeichen, Bestenliste, Konfetti, Avatare, App-Icons, Offline (PWA), Navigation mit Icons |
 
 Status: offen / in Arbeit / fertig.
@@ -37,11 +38,10 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-Stand 2026-10-18: Redesign nach Stil „A3" (vom Nutzer gewählt) begonnen. Startseite und Grundlagen sind umgestellt.
+Stand 2026-10-18: R2 ist gebaut und gepusht, der Nutzer prüft die Screenshots. Pull Request erst nach seiner Freigabe.
 
-1. Restliche Seiten im Stil A3 überarbeiten: Lernen (Einrichtung), Lektion, Einstellungen (in Gruppen statt einer langen Seite), Erfolge, Scan.
-2. Logo ist entschieden (Variante 4a) und eingebaut.
-3. Verbrauchtes Guthaben nach E5 nachtragen.
+1. Rückmeldung zu R2 einarbeiten, dann Pull Request.
+2. Verbrauchtes Guthaben nach E5 und dem Redesign nachtragen.
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
 
@@ -85,7 +85,7 @@ Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.githu
 | `public/icons/` | Platzhalter-App-Icons (selbst erzeugt) |
 | `.claude/skills/ui-ux-pro-max/` | Design-Skill (MIT, Quelle in `QUELLE.md`), lokal nutzbar mit `python3 scripts/search.py` |
 | `src/index.css` | Design-Grundlage: Farben (Tailwind-Theme), Schriften, Schatten, Animationen |
-| `src/ui/ui.ts`, `icons.tsx`, `Mascot.tsx`, `Logo.tsx`, `Splash.tsx`, `haptics.ts` | Gemeinsame Klassen, Linien-Icons, Maskottchen „Snappy", Vibration |
+| `src/ui/ui.ts`, `icons.tsx`, `Mascot.tsx`, `Logo.tsx`, `Splash.tsx`, `haptics.ts`, `sounds.ts`, `Onboarding.tsx` | Gemeinsame Klassen, Linien-Icons, Maskottchen „Snappy", Vibration |
 | `vite.config.ts` | PWA: Manifest, Service Worker (vite-plugin-pwa) |
 | `src/modes/choice/`, `typing/`, `listen/`, `shared/` | Lernmodi und gemeinsame Teile (Eingabe, Rückmeldung, Sprachausgabe in `speech.ts`) |
 | `src/modes/modes.ts` | Kennungen und Standard-Reihenfolge der Lernmodi |
@@ -136,6 +136,13 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Vibration über `navigator.vibrate` (Android), abschaltbar in den Einstellungen. iPhones unterstützen das im Browser nicht.
 - „Weiterlernen" startet sofort mit dem zuletzt gewählten Modus und der Richtung und allen fälligen Karten. Ist nichts fällig, öffnet sich die normale Auswahl. „Heute dran" zählt die fälligen Wörter in genau dieser Richtung.
 - Startseite: Begrüßung, Hauptkarte mit Snappy und Tagesziel, Kacheln Serie/Level/XP, Wochenleiste Mo–So, Klassenarbeiten, Schnellzugriff Foto/Lektion, Lektionen mit Sprachfarbe und „% sicher" (Karten ab Fach 3).
+- „Mehr" ist eine Liste mit Unterseiten (`/einstellungen/:group`): Profil, Lernen, Foto-Scan, Darstellung, Daten, Über VocSnap.
+- Lernen: Schnellstart-Karte, Lernmodi als Kacheln (ein Tipp startet), Lektionen/Richtung/„nur fällige" unter „Anpassen". In der Runde: Zähler „x in Folge" (halb zählt mit), kleiner Snappy, Karten gleiten herein. Rundenende mit 1–3 Sternen (ab 60 % bzw. 90 %, halb zählt halb), hochzählenden XP, Level- und Tagesziel-Hinweis.
+- Erfolge: Level-Ring, Kennzahlen, Lern-Kalender (12 Wochen, Abfragen pro Tag), Abzeichen mit Fortschritt, Bestenliste als Podest.
+- Lektion: farbiger Kopf in Sprachfarbe, Reiter „Wörter"/„Hinzufügen", Suche, Punkte je Wort = Fach (schwächere Richtung).
+- Snappy-Tipps (`src/learn/tips.ts`): Sprechblase auf der Startseite je nach Tagesziel, Serie, gestern und Uhrzeit.
+- Einführung (3 Bilder) beim ersten Start, erneut über „Über VocSnap".
+- Töne per Web Audio (keine Dateien): Start-Melodie mit Auslöser-Klick, Töne bei richtig/halb/falsch und Erfolg. Abschaltbar unter Darstellung. Browser spielen Ton oft erst nach einer Berührung, beim Start klappt es vor allem in der installierten App auf Android.
 - Fehlertoleranz (offene Punkte aus der SPEC vorläufig so entschieden, änderbar in `tolerance.ts`):
   - Ein Buchstabe daneben ist halb, erst ab drei Buchstaben im Lösungswort.
   - Ein fehlender oder falscher Akzent zählt als ein Buchstabe, also halb. Zwei Akzentfehler sind falsch.
