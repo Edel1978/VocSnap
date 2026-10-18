@@ -18,7 +18,7 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | R2 Seiten und Extras | fertig | Lernen, Erfolge, Mehr, Lektion neu; Snappy-Tipps, Einführung, Töne, leere Zustände |
 | R3 Belohnungen und Anleitung | fertig | Neue Level-Kurve mit Rängen, Abzeichen in Stufen, Streak-Schutz |
 | R4 Geführte Einführung | fertig | Führung durch die echte App (Spotlight, Snappy-Sprechblase), Beispielwörter, Startton ohne Knopf |
-| R5 Aussprache und Fehlerbehebung | in Arbeit | Lernmodus Aussprache (einschaltbar), 12 Fehler und Verbesserungen aus der Durchsicht. Pull Request offen |
+| R5 Aussprache und Fehlerbehebung | fertig | Lernmodus Aussprache (einschaltbar), 12 Fehler und Verbesserungen aus der Durchsicht |
 | E5 Motivation und Feinschliff | fertig | XP, Level, Streak, Tagesziel, Abzeichen, Bestenliste, Konfetti, Avatare, App-Icons, Offline (PWA), Navigation mit Icons |
 
 Status: offen / in Arbeit / fertig.
@@ -42,10 +42,14 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-Stand 2026-10-18: R5 ist gebaut, Pull Request offen. Der Nutzer merged selbst.
+Stand 2026-10-18 (Sitzungsende): R1–R5 sind gemergt und online. Nichts offen auf dem Branch.
 
-1. Aussprache auf echten Geräten prüfen (Chrome Android, Samsung Internet).
-2. Verbrauchtes Guthaben nach E5 und dem Redesign nachtragen.
+1. Rückmeldung des Nutzers zur Aussprache-Erkennung abwarten (noch nicht getestet). Prüfen: Chrome Android, Samsung Internet (dort evtl. keine Spracherkennung, dann Hinweis in den Einstellungen).
+2. Prüfen lassen, ob Kontrast, Sicherungs-Hinweis und automatisches Update auf dem Handy passen.
+3. Verbrauchtes Guthaben nach E5 und R1–R5 erfragen und nachtragen. Ab ca. 70 % nur noch Fehler und Feinschliff.
+4. Danach mit dem Nutzer die nächste Etappe wählen. Vorgeschlagen und vom Nutzer noch nicht entschieden: tägliche Aufgaben mit Schatztruhe, Snappy-Garderobe (Accessoires je Level/Rang), Level-Aufstieg als eigene Feier (siehe Wunschliste).
+
+Arbeitsweise mit dem Nutzer: erst Plan oder Screenshots zeigen, dann bauen; Pull Request nur auf Wunsch, er merged selbst, danach Pull Request beobachten. Antworten auf Deutsch, einfach erklärt.
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
 
@@ -197,6 +201,20 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Bilder zu Vokabeln
 - Bezahlversion
 - Weitere Sprachen
+- Tägliche Aufgaben (3 kleine Ziele pro Tag, Schatztruhe mit Bonus-XP)
+- Snappy-Garderobe: Accessoires (Mütze, Brille, Krone …) je Level oder Rang freischalten
+- Level-Aufstieg als eigener Feier-Bildschirm mit Rang und Accessoire
+- Blitzrunde (60 Sekunden, Highscore) als Lernmodus
+- Runde „Schwere Wörter“ (am häufigsten falsch)
+- Wochenrückblick am Sonntag
+- Echte Play-Store-App mit eigener Hülle (z. B. Capacitor), dann auch Startton ohne Berührung; braucht eigene Domain wegen assetlinks
+
+## Installation auf Handys (Erfahrungen des Nutzers)
+
+- Android/Chrome: ⋮ → „App installieren“. Startton kommt automatisch (installierte Chrome-App).
+- Samsung: „Web-App installieren“ in Samsung Internet geht über Play; Play Protect blockierte, Lösung: Details → „Trotzdem installieren“. Samsung Internet lässt den Startton ohne Berührung nicht zu (vom Nutzer akzeptiert, kein Knopf).
+- Xiaomi: in Chrome installieren; vorher Einstellungen → Apps → Chrome → Weitere Berechtigungen → „Verknüpfungen auf dem Startbildschirm erstellen“ erlauben. Speicherbereiniger kann Websitedaten löschen, deshalb Sicherungs-Erinnerung.
+- Hinweise zu kommerzieller Nutzung wurden besprochen: GitHub Pages ist nicht für kommerzielle Angebote gedacht (auch nicht mit Pro), Repo hat keine LICENSE (= alle Rechte vorbehalten), Gemini verlangt für EU-Apps den Bezahl-Zugang und Mindestalter 18. Noch keine Entscheidung des Nutzers.
 
 ## Lokal weiterarbeiten
 
