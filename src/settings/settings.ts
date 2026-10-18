@@ -26,6 +26,8 @@ export interface Settings {
   haptics: boolean
   // Töne bei Antworten und beim Start.
   sounds: boolean
+  // Lernmodus „Aussprache“ (Mikrofon), standardmäßig aus und verborgen.
+  pronunciation: boolean
   // Geführte Einführung erledigt oder übersprungen.
   onboarded: boolean
   // Laufende Einführung: welcher Ablauf und welcher Schritt.
@@ -47,6 +49,7 @@ export const DEFAULT_SETTINGS: Settings = {
   activeProfileId: null,
   haptics: true,
   sounds: true,
+  pronunciation: false,
   onboarded: false,
   tour: null,
   learnMode: 'flashcard',
@@ -88,6 +91,7 @@ export function parseSettings(raw: unknown): Settings {
   if (typeof r.activeProfileId === 'string') s.activeProfileId = r.activeProfileId
   if (typeof r.haptics === 'boolean') s.haptics = r.haptics
   if (typeof r.sounds === 'boolean') s.sounds = r.sounds
+  if (typeof r.pronunciation === 'boolean') s.pronunciation = r.pronunciation
   if (typeof r.onboarded === 'boolean') s.onboarded = r.onboarded
   const t = r.tour as Record<string, unknown> | null | undefined
   if (t && (t.flow === 'full' || t.flow === 'short') && Number.isInteger(t.step) && (t.step as number) >= 0) {
