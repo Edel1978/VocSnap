@@ -40,9 +40,11 @@ export function PageTitle({ title, back, children }: { title: string; back?: str
 }
 
 // Zeile in einer Liste wie bei den Handy-Einstellungen.
-export function ListRow(props: { to: string; icon: IconName; color: string; title: string; detail?: string }) {
-  return (
-    <Link to={props.to} className="flex items-center gap-3 px-4 py-3 active:bg-slate-50 dark:active:bg-slate-800">
+// Zeile mit Symbol, als Link (to) oder Knopf (onClick).
+export function ListRow(props: { to?: string; onClick?: () => void; icon: IconName; color: string; title: string; detail?: string }) {
+  const cls = 'flex w-full items-center gap-3 px-4 py-3 text-left active:bg-slate-50 dark:active:bg-slate-800'
+  const body = (
+    <>
       <span className="flex size-9 items-center justify-center rounded-xl text-white" style={{ backgroundColor: props.color }}>
         <Icon name={props.icon} className="size-5" />
       </span>
@@ -51,7 +53,16 @@ export function ListRow(props: { to: string; icon: IconName; color: string; titl
         {props.detail && <span className={`${muted} block truncate`}>{props.detail}</span>}
       </span>
       <Icon name="chevron" className="size-5 text-slate-400" />
+    </>
+  )
+  return props.to ? (
+    <Link to={props.to} className={cls}>
+      {body}
     </Link>
+  ) : (
+    <button type="button" className={cls} onClick={props.onClick}>
+      {body}
+    </button>
   )
 }
 

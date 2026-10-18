@@ -1,6 +1,7 @@
 import { useEffect, useState, type CSSProperties } from 'react'
 import { LOGO, LogoCard, LogoRing, LogoSpark } from './Logo'
-import { sound } from './sounds'
+import { Icon } from './icons'
+import { dropBlockedSound, sound, soundBlocked } from './sounds'
 import { useApp } from './AppContext'
 
 // Nur einmal pro App-Start, nicht bei Seitenwechseln.
@@ -18,6 +19,8 @@ const own = (animation: string): CSSProperties => ({ animation, transformBox: 'f
 // es macht „Snap" (Blitz), der Funke leuchtet auf, dann erscheint der Name.
 export function Splash() {
   const [visible, setVisible] = useState(!shown)
+  // Browser sperrt den Ton bis zur ersten Berührung (z. B. Samsung): Hinweis „Tippen für Ton“.
+  const [blocked, setBlocked] = useState(false)
   const { sounds } = useApp().settings
 
   useEffect(() => {
@@ -26,16 +29,29 @@ export function Splash() {
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     // Einstellung direkt lesen: der Effekt läuft vor dem des AppProviders.
     if (!reduced && sounds) sound.intro()
+    const check = setTimeout(() => setBlocked(soundBlocked()), 300)
     const t = setTimeout(() => setVisible(false), reduced ? REDUCED_MS : TOTAL_MS)
-    return () => clearTimeout(t)
+    return () => {
+      clearTimeout(check)
+      clearTimeout(t)
+      dropBlockedSound()
+    }
   }, [visible])
+
+  const tap = () => {
+    if (!blocked) return setVisible(false)
+    // Die Berührung gibt den Ton frei: Klang sofort abspielen, die Animation läuft normal weiter.
+    dropBlockedSound()
+    sound.intro(0.05)
+    setBlocked(false)
+  }
 
   if (!visible) return null
 
   return (
     <div
       role="presentation"
-      onClick={() => setVisible(false)}
+      onClick={tap}
       className="fixed inset-0 z-[60] flex flex-col items-center justify-center"
       style={{
         background: `linear-gradient(135deg, ${LOGO.from}, ${LOGO.to})`,
@@ -62,6 +78,11 @@ export function Splash() {
       <p className="mt-2 font-semibold text-indigo-100" style={{ animation: anim(['splash-letter', 400, 1650]) }}>
         Fotografieren. Lernen. Können.
       </p>
+      {blocked && (
+        <p className="absolute bottom-[max(2.5rem,env(safe-area-inset-bottom))] flex animate-pop items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-bold text-white">
+          <Icon name="volume" className="size-5" /> Tippen für Ton
+        </p>
+      )}
       {/* Kamerablitz beim Einrasten des Rings */}
       <div
         className="pointer-events-none absolute inset-0 bg-white opacity-0"
