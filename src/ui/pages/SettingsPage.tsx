@@ -14,7 +14,7 @@ import { ProfilesPage } from './ProfilesPage'
 
 // Übersicht „Mehr": Gruppen statt einer langen Seite.
 export function SettingsPage() {
-  const { settings, profile } = useApp()
+  const { settings, profile, updateSettings } = useApp()
   const chain = settings.providerOrder.filter((p) => !PROVIDERS[p].requiresKey || settings.apiKeys[p]?.trim())
   return (
     <div>
@@ -27,6 +27,7 @@ export function SettingsPage() {
         <ListRow to="/einstellungen/daten" icon="database" color="#10B981" title="Daten" detail="Sichern und wiederherstellen" />
       </div>
       <div className={`${card} animate-pop mt-4 divide-y divide-slate-100 overflow-hidden p-0 dark:divide-slate-800`} style={{ animationDelay: '80ms' }}>
+        <ListRow onClick={() => updateSettings({ onboarded: false })} icon="sparkle" color="#F59E0B" title="Anleitung" detail="So funktioniert VocSnap" />
         <ListRow to="/einstellungen/info" icon="info" color="#64748B" title="Über VocSnap" />
       </div>
     </div>
@@ -197,7 +198,7 @@ function About() {
         </p>
       </Section>
       <button type="button" className={`${button} flex w-full items-center justify-center gap-2 py-3`} onClick={() => updateSettings({ onboarded: false })}>
-        <Icon name="sparkle" className="size-5" /> Einführung noch einmal zeigen
+        <Icon name="sparkle" className="size-5" /> Anleitung ansehen
       </button>
     </>
   )
