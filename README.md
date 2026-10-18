@@ -13,3 +13,5 @@ npm test
 ```
 
 Jeder Push auf `main` wird über GitHub Actions auf GitHub Pages veröffentlicht.
+
+Die App lässt sich auf dem Handy installieren („Zum Startbildschirm hinzufügen“) und funktioniert zum Lernen auch offline.
