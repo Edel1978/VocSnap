@@ -97,3 +97,57 @@ a,
 :focus-visible {
   @apply outline-3 outline-offset-2 outline-indigo-500;
 }
+
+/* Start-Animation (Splash). Ablauf ca. 1,8 s, siehe Splash.tsx. */
+@keyframes splash-in-left {
+  from {
+    transform: translate(-160px, 40px) rotate(-40deg);
+    opacity: 0;
+  }
+}
+@keyframes splash-in-right {
+  from {
+    transform: translate(160px, 40px) rotate(40deg);
+    opacity: 0;
+  }
+}
+@keyframes splash-in-top {
+  from {
+    transform: translateY(-180px) rotate(10deg);
+    opacity: 0;
+  }
+}
+@keyframes splash-flash {
+  0%,
+  100% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.85;
+  }
+}
+@keyframes splash-pop {
+  from {
+    transform: scale(0.2) translateY(30px);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.12);
+  }
+}
+@keyframes splash-letter {
+  from {
+    transform: translateY(18px);
+    opacity: 0;
+  }
+  60% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes splash-out {
+  to {
+    opacity: 0;
+    transform: scale(1.04);
+    visibility: hidden;
+  }
+}

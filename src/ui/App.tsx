@@ -10,6 +10,7 @@ import { PasteImportPage } from './pages/PasteImportPage'
 import { ProfilesPage } from './pages/ProfilesPage'
 import { ScanPage } from './pages/ScanPage'
 import { ScanPickPage } from './pages/ScanPickPage'
+import { Splash } from './Splash'
 import { SettingsPage } from './pages/SettingsPage'
 
 const TABS: { to: string; label: string; icon: IconName }[] = [
@@ -51,6 +52,7 @@ function Header() {
 export function App() {
   return (
     <AppProvider>
+      <Splash />
       <HashRouter>
         <div aria-hidden="true" className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
           <div className="absolute -top-24 -right-20 size-64 rounded-full bg-indigo-200 opacity-50 blur-3xl dark:bg-indigo-900/40" />
