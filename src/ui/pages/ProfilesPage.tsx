@@ -2,7 +2,7 @@ import { useState } from 'react'
 import type { Profile } from '../../data/types'
 import { useApp } from '../AppContext'
 import { Loading, Section, StorageError } from '../components'
-import { ProfileForm } from '../ProfileForm'
+import { AvatarPicker, ProfileForm } from '../ProfileForm'
 import { button, danger, input } from '../ui'
 
 export function ProfilesPage() {
@@ -21,8 +21,8 @@ export function ProfilesPage() {
               profile={p}
               active={p.id === profile?.id}
               onSelect={() => updateSettings({ activeProfileId: p.id })}
-              onRename={async (name) => {
-                await store.updateProfile(p.id, { name })
+              onRename={async (name, avatar) => {
+                await store.updateProfile(p.id, { name, avatar })
                 await reloadProfiles()
               }}
               onDelete={async () => {
@@ -36,8 +36,8 @@ export function ProfilesPage() {
       <Section title="Neues Profil">
         <ProfileForm
           label="Anlegen"
-          onSubmit={async (name) => {
-            const p = await store.createProfile({ name })
+          onSubmit={async (name, avatar) => {
+            const p = await store.createProfile({ name, avatar })
             updateSettings({ activeProfileId: p.id })
             await reloadProfiles()
           }}
@@ -51,28 +51,32 @@ function ProfileRow(props: {
   profile: Profile
   active: boolean
   onSelect: () => void
-  onRename: (name: string) => Promise<void>
+  onRename: (name: string, avatar: string) => Promise<void>
   onDelete: () => Promise<void>
 }) {
   const { profile, active } = props
   const [editing, setEditing] = useState(false)
   const [name, setName] = useState(profile.name)
+  const [avatar, setAvatar] = useState(profile.avatar)
 
   if (editing) {
     return (
-      <li className="flex gap-2">
-        <input className={input} value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
-        <button
-          type="button"
-          className={button}
-          disabled={!name.trim()}
-          onClick={async () => {
-            await props.onRename(name.trim())
-            setEditing(false)
-          }}
-        >
-          OK
-        </button>
+      <li className="space-y-2">
+        <AvatarPicker value={avatar} onChange={setAvatar} />
+        <div className="flex gap-2">
+          <input className={input} value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
+          <button
+            type="button"
+            className={button}
+            disabled={!name.trim()}
+            onClick={async () => {
+              await props.onRename(name.trim(), avatar)
+              setEditing(false)
+            }}
+          >
+            OK
+          </button>
+        </div>
       </li>
     )
   }
@@ -86,11 +90,11 @@ function ProfileRow(props: {
           active ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800'
         }`}
       >
-        {profile.name}
+        <span aria-hidden="true">{profile.avatar || '🙂'}</span> {profile.name}
         {active && <span className="ml-2 text-sm opacity-80">aktiv</span>}
       </button>
       <button type="button" className={button} onClick={() => setEditing(true)}>
-        Umbenennen
+        Ändern
       </button>
       <button
         type="button"
