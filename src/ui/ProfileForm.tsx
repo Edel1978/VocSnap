@@ -43,18 +43,17 @@ export function ProfileForm({ label, onSubmit }: { label: string; onSubmit: (nam
   return (
     <form onSubmit={submit} className="space-y-3">
       <AvatarPicker value={avatar} onChange={setAvatar} />
-      <div className="flex gap-2">
-        <input
-          className={input}
-          placeholder="Name oder Spitzname"
-          value={name}
-          maxLength={40}
-          onChange={(e) => setName(e.target.value)}
-        />
-        <button type="submit" className={`${primary} py-2`} disabled={!name.trim() || busy}>
-          {label}
-        </button>
-      </div>
+      <input
+        className={input}
+        placeholder="Name oder Spitzname"
+        aria-label="Name"
+        value={name}
+        maxLength={40}
+        onChange={(e) => setName(e.target.value)}
+      />
+      <button type="submit" className={`${primary} w-full`} disabled={!name.trim() || busy}>
+        {label}
+      </button>
     </form>
   )
 }
