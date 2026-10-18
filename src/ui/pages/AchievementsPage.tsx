@@ -166,11 +166,11 @@ function LevelCard({ stats }: { stats: ProfileStats }) {
 // Farben je Stufe: Bronze, Silber, Gold, Diamant.
 const TIER_STYLES = [
   'from-orange-100 to-amber-200 dark:from-orange-950 dark:to-amber-900',
-  'from-slate-100 to-slate-300 dark:from-slate-800 dark:to-slate-600',
+  'from-zinc-100 to-zinc-300 dark:from-zinc-800 dark:to-zinc-600',
   'from-amber-100 to-yellow-300 dark:from-amber-900 dark:to-yellow-700',
   'from-sky-100 to-indigo-200 dark:from-sky-900 dark:to-indigo-800',
 ]
-const TIER_DOTS = ['bg-orange-400', 'bg-slate-400', 'bg-amber-400', 'bg-sky-400']
+const TIER_DOTS = ['bg-orange-400', 'bg-zinc-400', 'bg-amber-400', 'bg-sky-400']
 
 function BadgeTile({ badge: b, stats, delay }: { badge: (typeof BADGES)[number]; stats: ProfileStats; delay: number }) {
   const { tier, value, next } = badgeProgress(b, stats)
