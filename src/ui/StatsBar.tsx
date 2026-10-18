@@ -31,7 +31,7 @@ export function StatsBar({ stats, goal }: { stats: ProfileStats; goal: number })
           <div>
             <div className="flex justify-between text-xs text-slate-500">
               <span>
-                Tagesziel {Math.min(todayWords, goal)}/{goal}
+                Tagesziel {Math.min(todayWords, goal)}/{goal} gewusst
                 {todayWords >= goal && ' ✓'}
               </span>
               <span>{streak > 0 ? `🔥 ${streak} ${streak === 1 ? 'Tag' : 'Tage'}` : 'Noch keine Serie'}</span>

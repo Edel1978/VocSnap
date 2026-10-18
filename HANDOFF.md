@@ -117,7 +117,8 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Matching: 5 Paare pro Runde, erst links wählen, dann rechts. Ein Fehlversuch macht die Abfrage falsch, sonst richtig. Gleicher Lösungstext zählt als Treffer. Bei „Beide Richtungen" kann dasselbe Wort in beiden Richtungen in einer Runde vorkommen.
 - XP: richtig 10, halb 5, falsch 1. Level n ab 50 · (n−1)² XP (Level 2 ab 50, 3 ab 200, 4 ab 450 …).
 - Streak: Tage in Folge mit mindestens einer Abfrage. Zählt bis gestern weiter, solange heute noch gelernt werden kann.
-- Tagesziel: verschiedene Wörter pro Tag (Einstellung „Vokabeln pro Tag").
+- Tagesziel: verschiedene Wörter pro Tag, die richtig oder halb richtig beantwortet wurden (Einstellung „gewusste Vokabeln pro Tag"). Falsche Antworten zählen nicht, halten aber die Streak.
+- Zahlenfelder in den Einstellungen (`NumberField`) lassen sich beim Tippen leeren, ungültige Werte springen beim Verlassen zurück.
 - Abzeichen werden nur aus Kennzahlen berechnet, nicht gespeichert (passt zum Prinzip „Lernstand aus Ereignissen").
 - Bestenliste: alle Profile des Geräts, wahlweise XP der letzten 7 Tage oder gesamt. Erscheint ab zwei Profilen.
 - Belohnung am Rundenende: XP der Runde, Level-Aufstieg, „Tagesziel geschafft". Konfetti bei Level-Aufstieg, erreichtem Tagesziel oder fehlerfreier Runde. Entfällt bei „Bewegung reduzieren".

@@ -3,6 +3,7 @@ import type { Settings } from '../../settings/settings'
 import { useApp } from '../AppContext'
 import { Section } from '../components'
 import { DataSection } from '../DataSection'
+import { NumberField } from '../NumberField'
 import { ProviderSection } from '../ProviderSection'
 import { button, input } from '../ui'
 
@@ -42,9 +43,7 @@ export function SettingsPage() {
     updateSettings({ modeOrder: order })
   }
 
-  const setLeitnerDays = (i: number, v: string) => {
-    const n = Number(v)
-    if (!Number.isInteger(n) || n < 1) return
+  const setLeitnerDays = (i: number, n: number) => {
     const next = [...settings.leitnerIntervals]
     next[i] = n
     updateSettings({ leitnerIntervals: next })
@@ -83,18 +82,13 @@ export function SettingsPage() {
 
       <Section title="Tagesziel">
         <label className="flex items-center gap-3">
-          <input
-            type="number"
-            min={1}
-            inputMode="numeric"
+          <NumberField
             className={`${input} w-24`}
+            aria-label="Tagesziel"
             value={settings.dailyGoal}
-            onChange={(e) => {
-              const n = Number(e.target.value)
-              if (Number.isInteger(n) && n > 0) updateSettings({ dailyGoal: n })
-            }}
+            onChange={(dailyGoal) => updateSettings({ dailyGoal })}
           />
-          <span>Vokabeln pro Tag</span>
+          <span>gewusste Vokabeln pro Tag</span>
         </label>
       </Section>
 
@@ -125,13 +119,11 @@ export function SettingsPage() {
           {settings.leitnerIntervals.map((d, i) => (
             <label key={i} className="text-center text-xs text-slate-500">
               Fach {i + 1}
-              <input
-                type="number"
-                min={1}
-                inputMode="numeric"
+              <NumberField
                 className={`${input} mt-1 px-1 text-center`}
                 value={d}
-                onChange={(e) => setLeitnerDays(i, e.target.value)}
+                max={365}
+                onChange={(n) => setLeitnerDays(i, n)}
               />
             </label>
           ))}

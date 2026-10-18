@@ -35,6 +35,12 @@ describe('Kennzahlen', () => {
     expect(computeStats([], 20, now)).toMatchObject({ streak: 0, bestStreak: 0, xp: 0 })
   })
 
+  it('Tagesziel zählt nur gewusste Wörter', () => {
+    const s = computeStats([ev(20, 'wrong', 'a'), ev(20, 'wrong', 'b'), ev(20, 'half', 'c')], 1, now)
+    expect(s.todayWords).toBe(1)
+    expect(computeStats([ev(20, 'wrong', 'a')], 1, now)).toMatchObject({ todayWords: 0, goalDays: 0, streak: 1 })
+  })
+
   it('Tagesziel zählt verschiedene Wörter', () => {
     const today = [ev(20, 'correct', 'a'), ev(20, 'wrong', 'a'), ev(20, 'correct', 'b')]
     const s = computeStats([...today, ev(19, 'correct', 'a'), ev(19, 'correct', 'b')], 2, now)
