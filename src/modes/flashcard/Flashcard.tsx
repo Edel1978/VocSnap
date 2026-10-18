@@ -20,11 +20,13 @@ export function Flashcard({ items, settings, onResults }: ModeProps) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      // Enter/Leertaste auf einem Knopf löst den Knopf aus, nicht das Umdrehen.
+      if ((e.target as Element | null)?.closest('button, input, a, textarea, select')) return
       if (e.key === ' ' || e.key === 'Enter') {
         e.preventDefault()
         setFlipped((f) => !f)
-      } else if (e.key === 'ArrowRight' && (swipe || flipped)) onResults([{ item, result: 'correct' }])
-      else if (e.key === 'ArrowLeft' && (swipe || flipped)) onResults([{ item, result: 'wrong' }])
+      } else if (e.key === 'ArrowRight' && (swipe || flipped)) done('correct')
+      else if (e.key === 'ArrowLeft' && (swipe || flipped)) done('wrong')
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -83,11 +85,11 @@ export function Flashcard({ items, settings, onResults }: ModeProps) {
       </div>
 
       {swipe ? (
-        <div className="flex justify-between text-sm text-slate-500">
-          <button type="button" className="px-2 py-1" onClick={() => done('wrong')}>
+        <div className="grid grid-cols-2 gap-3 text-sm font-semibold">
+          <button type="button" className="min-h-11 rounded-xl bg-rose-100 px-3 py-2.5 text-rose-700 dark:bg-rose-950 dark:text-rose-300" onClick={() => done('wrong')}>
             ← Nicht gewusst
           </button>
-          <button type="button" className="px-2 py-1" onClick={() => done('correct')}>
+          <button type="button" className="min-h-11 rounded-xl bg-emerald-100 px-3 py-2.5 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300" onClick={() => done('correct')}>
             Gewusst →
           </button>
         </div>

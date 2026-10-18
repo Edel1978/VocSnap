@@ -421,7 +421,12 @@ function RoundView({
   return (
     <div className="space-y-4 pt-1">
       <div className="flex items-center gap-3">
-        <button type="button" aria-label="Runde abbrechen" className="-ml-1 flex size-9 items-center justify-center rounded-full text-slate-400" onClick={() => setRound(null)}>
+        <button
+          type="button"
+          aria-label="Runde abbrechen"
+          className="-ml-2 flex size-11 items-center justify-center rounded-full text-xl text-slate-500 active:bg-slate-200 dark:active:bg-slate-800"
+          onClick={() => (session.index === 0 || confirm('Runde abbrechen? Bisherige Antworten bleiben gespeichert.')) && setRound(null)}
+        >
           ✕
         </button>
         <div className="h-3 flex-1 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
