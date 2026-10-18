@@ -24,7 +24,11 @@ describe('Leitner', () => {
       ev('wrong', '2026-01-01T10:00:00Z', 'w', 'to_source'),
     ]
     const s = computeStates(events)
-    expect(s.get(cardKey('w', 'to_target'))).toEqual({ box: 3, lastAt: '2026-01-03T10:00:00Z' })
+    expect(s.get(cardKey('w', 'to_target'))).toEqual({
+      box: 3,
+      firstAt: '2026-01-01T10:00:00Z',
+      lastAt: '2026-01-03T10:00:00Z',
+    })
     expect(boxOf(s.get(cardKey('w', 'to_source')))).toBe(1)
     expect(boxOf(s.get(cardKey('neu', 'to_target')))).toBe(1)
   })
@@ -36,10 +40,12 @@ describe('Leitner', () => {
 
   it('neue Karten sind sofort fällig, sonst nach dem Abstand des Fachs', () => {
     expect(isDue(undefined, INTERVALS)).toBe(true)
-    const state = { box: 3, lastAt: new Date(2026, 0, 10, 20, 0).toISOString() }
+    const at = new Date(2026, 0, 10, 20, 0).toISOString()
+    const state = { box: 3, firstAt: at, lastAt: at }
     expect(isDue(state, INTERVALS, new Date(2026, 0, 13, 23, 0))).toBe(false)
     expect(isDue(state, INTERVALS, new Date(2026, 0, 14, 0, 30))).toBe(true)
-    const box1 = { box: 1, lastAt: new Date(2026, 0, 10, 23, 59).toISOString() }
+    const at1 = new Date(2026, 0, 10, 23, 59).toISOString()
+    const box1 = { box: 1, firstAt: at1, lastAt: at1 }
     expect(isDue(box1, INTERVALS, new Date(2026, 0, 10, 23, 59))).toBe(false)
     expect(isDue(box1, INTERVALS, new Date(2026, 0, 11, 0, 1))).toBe(true)
   })
