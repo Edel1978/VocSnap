@@ -17,6 +17,7 @@ describe('snappySays', () => {
   it('erinnert an die Serie und an gestern', () => {
     expect(snappySays({ ...base, streak: 4 })).toContain('4 Tage')
     expect(snappySays({ ...base, yesterdayKnown: 12 })).toContain('Gestern 12')
+    expect(snappySays({ ...base, streak: 5, savedByFreeze: true })).toContain('Schutztag')
   })
   it('sonst fällige Wörter oder Abendtipp', () => {
     expect(snappySays(base)).toContain('8 Wörter')

@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { addDays } from '../../learn/dates'
 import { dayNumber } from '../../learn/leitner'
-import { BADGES, earned } from '../../learn/motivation'
+import { BADGES, badgeCount, badgeProgress, rankOf, STREAK_FREEZES, TIER_NAMES } from '../../learn/motivation'
 import { useApp } from '../AppContext'
 import { ErrorBox, Loading, PageTitle, Section } from '../components'
 import { Icon } from '../icons'
@@ -28,7 +28,7 @@ export function AchievementsPage() {
   if (!mine) return <Loading />
   const ranked = [...data.data].sort((a, b) => (board === 'week' ? b.stats.weekXp - a.stats.weekXp : b.stats.xp - a.stats.xp))
   const score = (s: ProfileStats) => (board === 'week' ? s.weekXp : s.xp)
-  const got = BADGES.filter((b) => earned(b, mine)).length
+  const count = badgeCount(mine)
 
   return (
     <div className="space-y-4">
@@ -36,56 +36,35 @@ export function AchievementsPage() {
 
       <LevelCard stats={mine} />
 
-      <div className="grid grid-cols-3 gap-2.5">
+      <div className="grid grid-cols-2 gap-2.5">
         {[
           ['Serie', `${mine.streak}`, 'flame'],
           ['Beste Serie', `${mine.bestStreak}`, 'star'],
+          ['Schutztage frei', `${mine.freezesLeft}/${STREAK_FREEZES}`, 'shield'],
           ['Abfragen', `${mine.reviews}`, 'check'],
         ].map(([label, value, icon], i) => (
-          <div key={label} className={`${card} animate-pop px-3 py-2.5`} style={{ animationDelay: `${60 * i}ms` }}>
-            <Icon name={icon as 'flame'} className="size-5 text-orange-500" />
-            <b className="mt-1 block font-display text-2xl leading-none">{value}</b>
-            <span className="text-xs font-bold text-slate-500">{label}</span>
+          <div key={label} className={`${card} animate-pop flex items-center gap-3 px-3 py-2.5`} style={{ animationDelay: `${60 * i}ms` }}>
+            <Icon name={icon as 'flame'} className={`size-6 ${icon === 'shield' ? 'text-sky-500' : 'text-orange-500'}`} />
+            <div>
+              <b className="block font-display text-2xl leading-none">{value}</b>
+              <span className="text-xs font-bold text-slate-500">{label}</span>
+            </div>
           </div>
         ))}
       </div>
+      <p className={`${muted} -mt-1 px-1 text-xs`}>
+        Schutztage retten deine Serie, wenn du mal einen Tag nicht lernst. Du hast {STREAK_FREEZES} pro 30 Tage, sie werden automatisch genutzt.
+      </p>
 
       <Section title="Lern-Kalender">
-        <Heatmap perDay={mine.reviewsPerDay} />
+        <Heatmap perDay={mine.reviewsPerDay} frozen={mine.frozenDays} />
       </Section>
 
-      <Section title={`Abzeichen · ${got} von ${BADGES.length}`}>
+      <Section title={`Abzeichen · ${count.earned} von ${count.total}`}>
         <ul className="grid grid-cols-3 gap-2">
-          {BADGES.map((b, i) => {
-            const [cur, target] = b.progress(mine)
-            const done = cur >= target
-            return (
-              <li
-                key={b.id}
-                style={{ animationDelay: `${i * 40}ms` }}
-                className={`animate-pop rounded-2xl p-2 text-center ${
-                  done ? 'bg-gradient-to-b from-amber-100 to-orange-100 dark:from-amber-950 dark:to-orange-950' : 'bg-slate-100 dark:bg-slate-800'
-                }`}
-              >
-                <div className={`text-3xl ${done ? '' : 'opacity-40 grayscale'}`} aria-hidden="true">
-                  {b.icon}
-                </div>
-                <div className="text-sm leading-tight font-bold">{b.title}</div>
-                {done ? (
-                  <div className="text-[11px] text-slate-500">{b.description}</div>
-                ) : (
-                  <>
-                    <div className="mx-1 mt-1.5 h-1.5 overflow-hidden rounded-full bg-white dark:bg-slate-700">
-                      <div className="h-full rounded-full bg-indigo-500" style={{ width: `${(cur / target) * 100}%` }} />
-                    </div>
-                    <div className="mt-0.5 text-[11px] text-slate-500">
-                      {cur}/{target}
-                    </div>
-                  </>
-                )}
-              </li>
-            )
-          })}
+          {BADGES.map((b, i) => (
+            <BadgeTile key={b.id} badge={b} stats={mine} delay={i * 40} />
+          ))}
         </ul>
       </Section>
 
@@ -172,6 +151,7 @@ function LevelCard({ stats }: { stats: ProfileStats }) {
         </div>
       </div>
       <div className="min-w-0">
+        <p className="w-fit rounded-full bg-white/15 px-2.5 py-0.5 text-xs font-extrabold tracking-wide">{rankOf(level.level)}</p>
         <p className="font-display text-3xl font-bold">{stats.xp} XP</p>
         <p className="text-sm text-indigo-100">
           Noch {level.needed - level.current} XP bis Level {level.level + 1}
@@ -183,8 +163,64 @@ function LevelCard({ stats }: { stats: ProfileStats }) {
   )
 }
 
+// Farben je Stufe: Bronze, Silber, Gold, Diamant.
+const TIER_STYLES = [
+  'from-orange-100 to-amber-200 dark:from-orange-950 dark:to-amber-900',
+  'from-slate-100 to-slate-300 dark:from-slate-800 dark:to-slate-600',
+  'from-amber-100 to-yellow-300 dark:from-amber-900 dark:to-yellow-700',
+  'from-sky-100 to-indigo-200 dark:from-sky-900 dark:to-indigo-800',
+]
+const TIER_DOTS = ['bg-orange-400', 'bg-slate-400', 'bg-amber-400', 'bg-sky-400']
+
+function BadgeTile({ badge: b, stats, delay }: { badge: (typeof BADGES)[number]; stats: ProfileStats; delay: number }) {
+  const { tier, value, next } = badgeProgress(b, stats)
+  const tiered = b.targets.length > 1
+  if (b.secret && tier === 0) {
+    return (
+      <li style={{ animationDelay: `${delay}ms` }} className="flex animate-pop flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 p-2 text-center dark:border-slate-700">
+        <div className="text-3xl text-slate-300 dark:text-slate-600" aria-hidden="true">
+          ?
+        </div>
+        <div className="text-sm leading-tight font-bold text-slate-400">Geheim</div>
+      </li>
+    )
+  }
+  const prev = tier > 0 ? b.targets[tier - 1] : 0
+  return (
+    <li
+      style={{ animationDelay: `${delay}ms` }}
+      className={`animate-pop rounded-2xl p-2 text-center ${tier > 0 ? `bg-gradient-to-b ${TIER_STYLES[Math.min(tier, 4) - 1]}` : 'bg-slate-100 dark:bg-slate-800'}`}
+    >
+      <div className={`text-3xl ${tier > 0 ? '' : 'opacity-40 grayscale'}`} aria-hidden="true">
+        {b.icon}
+      </div>
+      <div className="text-sm leading-tight font-bold">{b.title}</div>
+      {tiered && (
+        <div className="mt-1 flex justify-center gap-1" aria-label={tier > 0 ? `Stufe ${TIER_NAMES[tier - 1]}` : 'Noch keine Stufe'}>
+          {b.targets.map((_, n) => (
+            <span key={n} className={`size-2 rounded-full ${n < tier ? TIER_DOTS[n] : 'bg-white dark:bg-slate-700'}`} />
+          ))}
+        </div>
+      )}
+      {next === undefined ? (
+        <div className="mt-0.5 text-[11px] text-slate-600 dark:text-slate-300">{b.describe(prev)}</div>
+      ) : (
+        <>
+          <div className="mx-1 mt-1.5 h-1.5 overflow-hidden rounded-full bg-white dark:bg-slate-700">
+            <div className="h-full rounded-full bg-indigo-500" style={{ width: `${(Math.min(value, next) / next) * 100}%` }} />
+          </div>
+          <div className="mt-0.5 text-[11px] leading-tight text-slate-500">
+            {tiered ? `${TIER_NAMES[tier]}: ` : ''}
+            {b.describe(next)}
+          </div>
+        </>
+      )}
+    </li>
+  )
+}
+
 // Letzte Wochen als Kästchen, je mehr Abfragen, desto kräftiger.
-function Heatmap({ perDay }: { perDay: Map<number, number> }) {
+function Heatmap({ perDay, frozen }: { perDay: Map<number, number>; frozen: Set<number> }) {
   const today = new Date()
   const monday = addDays(today, -((today.getDay() + 6) % 7) - (WEEKS - 1) * 7)
   const todayNr = dayNumber(today)
@@ -200,13 +236,15 @@ function Heatmap({ perDay }: { perDay: Map<number, number> }) {
           return (
             <span
               key={i}
-              title={`${d.toLocaleDateString('de-DE')}: ${n} Abfragen`}
-              className={`aspect-square rounded-[4px] ${nr > todayNr ? 'opacity-0' : shade(n)} ${nr === todayNr ? 'ring-2 ring-indigo-400' : ''}`}
+              title={`${d.toLocaleDateString('de-DE')}: ${frozen.has(nr) ? 'Schutztag' : `${n} Abfragen`}`}
+              className={`aspect-square rounded-[4px] ${nr > todayNr ? 'opacity-0' : frozen.has(nr) ? 'bg-sky-300 dark:bg-sky-700' : shade(n)} ${nr === todayNr ? 'ring-2 ring-indigo-400' : ''}`}
             />
           )
         })}
       </div>
       <p className={`${muted} mt-2 flex items-center justify-end gap-1 text-xs`}>
+        <span className="size-3 rounded-[3px] bg-sky-300 dark:bg-sky-700" /> Schutztag
+        <span className="mx-1" />
         weniger
         {['bg-slate-100 dark:bg-slate-800', 'bg-orange-200', 'bg-orange-300', 'bg-orange-400', 'bg-orange-600'].map((c) => (
           <span key={c} className={`size-3 rounded-[3px] ${c}`} />

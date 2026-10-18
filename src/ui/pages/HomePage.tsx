@@ -121,6 +121,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
           streak: stats.streak,
           yesterdayKnown: stats.yesterdayWords,
           hour: today.getHours(),
+          savedByFreeze: stats.frozenDays.has(todayNr - 1),
         })}
       </p>
 
@@ -180,6 +181,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
         {WEEK.map((d, i) => {
           const nr = dayNumber(addDays(monday, i))
           const done = stats.activeDays.has(nr)
+          const frozen = stats.frozenDays.has(nr)
           const isToday = nr === todayNr
           return (
             <div key={d} className="flex flex-col items-center gap-1 text-[11px] font-bold">
@@ -188,12 +190,15 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
                 className={`flex size-7 items-center justify-center rounded-full ${
                   done
                     ? 'bg-orange-500 text-white'
-                    : isToday
+                    : frozen
+                      ? 'bg-sky-100 text-sky-500 dark:bg-sky-950'
+                      : isToday
                       ? 'border-[3px] border-dashed border-orange-400'
                       : 'bg-slate-100 dark:bg-slate-800'
                 }`}
               >
                 {done && <Icon name="check" className="size-4" />}
+                {frozen && <Icon name="shield" className="size-4" />}
               </span>
             </div>
           )

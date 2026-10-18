@@ -15,7 +15,7 @@ import {
 } from '../../learn/session'
 import { cardKey, computeStates, isDue, type CardState } from '../../learn/leitner'
 import { formatDay } from '../../learn/dates'
-import { computeStats } from '../../learn/motivation'
+import { computeStats, rankOf } from '../../learn/motivation'
 import { wrongWordIds } from '../../learn/stats'
 import { loadExam } from '../exam'
 import { MODES, type ModeId } from '../../modes/modes'
@@ -481,6 +481,7 @@ function Reward(props: { profileId: string; pending: Promise<unknown>[]; saved: 
       {levelUp && (
         <div className="animate-pop rounded-3xl bg-gradient-to-r from-indigo-500 to-indigo-700 p-4 text-center font-display text-xl font-bold text-white">
           Neues Level: {levelUp}!
+          {rankOf(levelUp) !== rankOf(levelUp - 1) && <span className="block text-base">Neuer Rang: {rankOf(levelUp)}</span>}
         </div>
       )}
       {goal && (

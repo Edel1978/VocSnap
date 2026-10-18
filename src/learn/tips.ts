@@ -7,6 +7,8 @@ export interface TipInput {
   streak: number
   yesterdayKnown: number
   hour: number
+  // Gestern wurde ein Schutztag genutzt.
+  savedByFreeze?: boolean
 }
 
 export function snappySays(t: TipInput): string {
@@ -14,6 +16,7 @@ export function snappySays(t: TipInput): string {
   if (t.todayWords >= t.goal && t.due === 0) return 'Alles erledigt und Tagesziel geschafft. Stark!'
   if (t.todayWords >= t.goal) return 'Tagesziel geschafft! Wer mag, übt noch ein bisschen.'
   if (t.todayWords > 0) return `Noch ${t.goal - t.todayWords} Wörter bis zum Tagesziel. Du schaffst das!`
+  if (t.savedByFreeze && t.streak > 0) return `Ein Schutztag hat deine Serie von ${t.streak} Tagen gerettet. Heute geht’s weiter!`
   if (t.streak >= 3) return `${t.streak} Tage in Folge! Lass die Serie heute nicht reißen.`
   if (t.yesterdayKnown >= 10) return `Gestern ${t.yesterdayKnown} Wörter gewusst. Mach heute weiter so!`
   if (t.due === 0) return 'Heute ist nichts fällig. Zeit für neue Wörter?'
