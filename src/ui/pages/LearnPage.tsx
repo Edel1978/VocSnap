@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { Lesson, Word } from '../../data/types'
 import {
@@ -15,6 +15,7 @@ import {
 } from '../../learn/session'
 import { cardKey, computeStates, isDue, type CardState } from '../../learn/leitner'
 import { formatDay } from '../../learn/dates'
+import { computeStats } from '../../learn/motivation'
 import { wrongWordIds } from '../../learn/stats'
 import { loadExam } from '../exam'
 import { MODES, type ModeId } from '../../modes/modes'
@@ -22,6 +23,7 @@ import { LEARNING_MODES } from '../../modes/registry'
 import type { ModeResult } from '../../modes/types'
 import { useApp } from '../AppContext'
 import { ErrorBox, Loading, Section } from '../components'
+import { Confetti } from '../Confetti'
 import { button, muted, primary } from '../ui'
 import { useAsync } from '../useAsync'
 
@@ -241,6 +243,9 @@ function RoundView({
 }) {
   const { store, settings } = useApp()
   const [saveError, setSaveError] = useState(false)
+  // Ereignisse dieser Runde, um Fortschritt und Belohnung am Ende zu berechnen.
+  const pending = useRef<Promise<unknown>[]>([])
+  const saved = useRef(new Set<string>())
   const mode = LEARNING_MODES[round.mode]
   const { session } = round
 
@@ -249,7 +254,7 @@ function RoundView({
       let next = session
       for (const { item, result } of results) {
         next = answer(next, result)
-        store
+        const saving = store
           .addReviewEvent({
             word_id: item.word.id,
             profile_id: profileId,
@@ -257,7 +262,9 @@ function RoundView({
             mode: round.mode,
             result,
           })
+          .then((e) => saved.current.add(e.id))
           .catch(() => setSaveError(true))
+        pending.current.push(saving)
       }
       setRound({ ...round, session: next })
     },
@@ -276,13 +283,18 @@ function RoundView({
             {s.correct} von {session.items.length} gewusst
           </p>
           {s.wrong === 0 && <p className="mt-1 text-emerald-600 dark:text-emerald-400">Alles richtig!</p>}
+          <Reward profileId={profileId} pending={pending.current} saved={saved.current} allCorrect={s.wrong === 0} />
           {saveError && <p className="mt-2 text-sm text-rose-600">Einige Ergebnisse konnten nicht gespeichert werden.</p>}
         </Section>
         {wrong.length > 0 && (
           <button
             type="button"
             className={`${primary} w-full`}
-            onClick={() => setRound({ ...round, session: startSession(shuffle(wrong)) })}
+            onClick={() => {
+              pending.current = []
+              saved.current = new Set()
+              setRound({ ...round, session: startSession(shuffle(wrong)) })
+            }}
           >
             Fehler wiederholen ({wrong.length})
           </button>
@@ -322,6 +334,36 @@ function RoundView({
         settings={settings}
         onResults={onResults}
       />
+    </div>
+  )
+}
+
+// XP der Runde, Level-Aufstieg und Tagesziel. Vergleicht den Stand mit und ohne die Ereignisse dieser Runde.
+function Reward(props: { profileId: string; pending: Promise<unknown>[]; saved: Set<string>; allCorrect: boolean }) {
+  const { store, settings } = useApp()
+  const [data] = useAsync(async () => {
+    await Promise.allSettled(props.pending)
+    const events = await store.listReviewEvents(props.profileId)
+    const after = computeStats(events, settings.dailyGoal)
+    const before = computeStats(
+      events.filter((e) => !props.saved.has(e.id)),
+      settings.dailyGoal,
+    )
+    return {
+      xp: after.xp - before.xp,
+      levelUp: after.level.level > before.level.level ? after.level.level : null,
+      goal: after.todayWords >= settings.dailyGoal && before.todayWords < settings.dailyGoal,
+    }
+  }, [store, props.profileId, props.pending, props.saved, settings.dailyGoal])
+
+  if (data.state !== 'ready') return null
+  const { xp, levelUp, goal } = data.data
+  return (
+    <div className="mt-3 space-y-1">
+      {(levelUp || goal || props.allCorrect) && xp > 0 && <Confetti />}
+      <p className="font-semibold text-indigo-600 dark:text-indigo-400">+{xp} XP</p>
+      {levelUp && <p className="font-semibold">Neues Level: {levelUp}!</p>}
+      {goal && <p className="font-semibold text-emerald-600 dark:text-emerald-400">Tagesziel geschafft!</p>}
     </div>
   )
 }
