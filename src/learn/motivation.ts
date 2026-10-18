@@ -33,6 +33,8 @@ export interface Stats {
   reviews: number
   // Tage, an denen das Tagesziel erreicht wurde.
   goalDays: number
+  // Tage mit mindestens einer Abfrage (dayNumber), z. B. für die Wochenleiste.
+  activeDays: Set<number>
 }
 
 // Berechnet alle Kennzahlen aus den Ereignissen.
@@ -77,6 +79,7 @@ export function computeStats(events: ReviewEvent[], dailyGoal: number, now: Date
     todayWords: knownPerDay.get(today)?.size ?? 0,
     reviews: active.length,
     goalDays: [...knownPerDay.values()].filter((s) => s.size >= dailyGoal).length,
+    activeDays,
   }
 }
 

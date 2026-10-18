@@ -14,6 +14,7 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | E2b Anbieter-Kette | fertig | Gemini → Groq → Tesseract mit automatischem Wechsel, Groq als zweiter Anbieter, mehrere Seiten pro Scan |
 | E3 Lernmodi | fertig | Leitner (5 Fächer, fällige Karten), Multiple Choice, Tippen, Hören und Schreiben, Fehlertoleranz |
 | E4 Klassenarbeit und Matching | fertig | Lernplan zum Datum der Arbeit (Tagesplan, Generalprobe), Matching-Spiel |
+| R1 Redesign Stil A3 | in Arbeit | Neues Farbschema, Schriften, Maskottchen „Snappy", neue Startseite, Weiterlernen mit Sofortstart, Animationen, Vibration. Weitere Seiten folgen |
 | E5 Motivation und Feinschliff | fertig | XP, Level, Streak, Tagesziel, Abzeichen, Bestenliste, Konfetti, Avatare, App-Icons, Offline (PWA), Navigation mit Icons |
 
 Status: offen / in Arbeit / fertig.
@@ -36,11 +37,11 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-Stand 2026-10-18: Alle Etappen E0 bis E5 (und E2b) sind fertig. Weiter geht es mit Feinschliff, Fehlerbehebung und der Wunschliste.
+Stand 2026-10-18: Redesign nach Stil „A3" (vom Nutzer gewählt) begonnen. Startseite und Grundlagen sind umgestellt.
 
-1. Verbrauchtes Guthaben nach E5 nachtragen.
-2. App auf dem Handy installieren („Zum Startbildschirm hinzufügen") und offline testen. Sprachausgabe prüfen.
-3. Offene Punkte unten abarbeiten, dann Ideen aus der Wunschliste mit dem Nutzer priorisieren.
+1. Restliche Seiten im Stil A3 überarbeiten: Lernen (Einrichtung), Lektion, Einstellungen (in Gruppen statt einer langen Seite), Erfolge, Scan.
+2. Logo ist entschieden (Variante 4a) und eingebaut.
+3. Verbrauchtes Guthaben nach E5 nachtragen.
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
 
@@ -82,6 +83,9 @@ Deployment: Jeder Push auf `main` baut und veröffentlicht die App über `.githu
 | `src/ui/stats.ts`, `StatsBar.tsx`, `pages/AchievementsPage.tsx` | Statusleiste, Erfolge-Seite mit Bestenliste |
 | `src/ui/Confetti.tsx` | Konfetti (eigenes Canvas, ohne Bibliothek) |
 | `public/icons/` | Platzhalter-App-Icons (selbst erzeugt) |
+| `.claude/skills/ui-ux-pro-max/` | Design-Skill (MIT, Quelle in `QUELLE.md`), lokal nutzbar mit `python3 scripts/search.py` |
+| `src/index.css` | Design-Grundlage: Farben (Tailwind-Theme), Schriften, Schatten, Animationen |
+| `src/ui/ui.ts`, `icons.tsx`, `Mascot.tsx`, `Logo.tsx`, `Splash.tsx`, `haptics.ts` | Gemeinsame Klassen, Linien-Icons, Maskottchen „Snappy", Vibration |
 | `vite.config.ts` | PWA: Manifest, Service Worker (vite-plugin-pwa) |
 | `src/modes/choice/`, `typing/`, `listen/`, `shared/` | Lernmodi und gemeinsame Teile (Eingabe, Rückmeldung, Sprachausgabe in `speech.ts`) |
 | `src/modes/modes.ts` | Kennungen und Standard-Reihenfolge der Lernmodi |
@@ -124,6 +128,14 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Belohnung am Rundenende: XP der Runde, Level-Aufstieg, „Tagesziel geschafft". Konfetti bei Level-Aufstieg, erreichtem Tagesziel oder fehlerfreier Runde. Entfällt bei „Bewegung reduzieren".
 - Avatare: Emoji als Platzhalter (Feld `avatar` im Profil).
 - PWA: App-Hülle wird vorab gespeichert (ca. 0,5 MB), Lernen geht damit offline. Tesseract-Dateien (ca. 17 MB) werden erst beim ersten Scan zwischengespeichert. Updates werden automatisch geladen (`autoUpdate`).
+- Design „A3": Indigo (#4F46E5) mit Orange als Aktionsfarbe, Hintergrund #F5F3FF, weiche Karten mit Schatten statt Rahmen, Überschriften Fredoka, Text Nunito (beide OFL, mitgeliefert, offline). Die Tailwind-Grautöne (`slate-*`) sind im Theme auf leicht indigofarbene Töne umgestellt, so passen alle Seiten ohne Einzeländerung. Hell ist jetzt Standard, Dunkel bleibt wählbar.
+- Maskottchen „Snappy" (Karteikarte mit Gesicht, selbst gezeichnet): fröhlich, jubelnd (alles erledigt, fehlerfreie Runde) oder müde (Serie abgerissen).
+- Logo 4a (`src/ui/Logo.tsx`): weißes Kärtchen mit „V" (als Form gezeichnet, nicht als Schrift) im orangen Auslöser-Ring, gelber Funke, Indigo-Verlauf. Daraus sind Favicon und App-Icons in `public/icons/` erzeugt (normal, maskable, Apple).
+- Start-Animation (`src/ui/Splash.tsx`): einmal pro App-Start, ca. 2,3 s, Tipp überspringt. Das Logo setzt sich zusammen (Kärtchen wirbelt herein, Ring dreht sich ein, Blitz beim Einrasten, Funke leuchtet), dann erscheint der Schriftzug Buchstabe für Buchstabe. Bei „Bewegung reduzieren" nur 0,6 s ohne Bewegung.
+- Animationen nur per CSS (Einblenden, Wippen, Blinzeln, Drücken, Schütteln bei falsch). Bei „Bewegung reduzieren" ist alles aus.
+- Vibration über `navigator.vibrate` (Android), abschaltbar in den Einstellungen. iPhones unterstützen das im Browser nicht.
+- „Weiterlernen" startet sofort mit dem zuletzt gewählten Modus und der Richtung und allen fälligen Karten. Ist nichts fällig, öffnet sich die normale Auswahl. „Heute dran" zählt die fälligen Wörter in genau dieser Richtung.
+- Startseite: Begrüßung, Hauptkarte mit Snappy und Tagesziel, Kacheln Serie/Level/XP, Wochenleiste Mo–So, Klassenarbeiten, Schnellzugriff Foto/Lektion, Lektionen mit Sprachfarbe und „% sicher" (Karten ab Fach 3).
 - Fehlertoleranz (offene Punkte aus der SPEC vorläufig so entschieden, änderbar in `tolerance.ts`):
   - Ein Buchstabe daneben ist halb, erst ab drei Buchstaben im Lösungswort.
   - Ein fehlender oder falscher Akzent zählt als ein Buchstabe, also halb. Zwei Akzentfehler sind falsch.

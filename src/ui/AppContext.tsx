@@ -5,6 +5,7 @@ import { DexieStore } from '../data/dexieStore'
 import type { Store } from '../data/store'
 import type { Profile } from '../data/types'
 import { localSettingsStore, type Settings } from '../settings/settings'
+import { setHaptics } from './haptics'
 
 type ProfilesState = { state: 'loading' } | { state: 'error' } | { state: 'ready'; list: Profile[] }
 
@@ -26,6 +27,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const store = useMemo(() => new DexieStore(new VocSnapDb(), getDeviceId()), [])
   const [settings, setSettings] = useState(() => settingsStore.load())
   const [profiles, setProfiles] = useState<ProfilesState>({ state: 'loading' })
+
+  useEffect(() => setHaptics(settings.haptics), [settings.haptics])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', settings.theme === 'dark')

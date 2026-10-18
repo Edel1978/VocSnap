@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { isMatch, matchingResults } from '../../learn/matching'
 import { prompt, shuffle, solution } from '../../learn/session'
+import { haptic } from '../../ui/haptics'
 import type { ModeProps } from '../types'
 
 // Links Abfragen, rechts Lösungen. Erst links tippen, dann rechts.
@@ -19,9 +20,11 @@ export function Matching({ items, onResults }: ModeProps) {
       setDone(nextDone)
       setUsedRight(new Set(usedRight).add(r))
       setPicked(null)
+      haptic.tap()
       if (nextDone.size === items.length) setTimeout(() => onResults(matchingResults(items, missed)), 400)
     } else {
       setMissed(new Set(missed).add(picked))
+      haptic.result('wrong')
       setFlash(r)
       setTimeout(() => setFlash(null), 400)
     }

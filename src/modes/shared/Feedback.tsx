@@ -1,5 +1,7 @@
 import { useEffect } from 'react'
+import { primary } from '../../ui/ui'
 import type { ReviewResult } from '../../data/types'
+import { haptic } from '../../ui/haptics'
 
 const TEXT: Record<ReviewResult, { title: string; cls: string }> = {
   correct: { title: 'Richtig!', cls: 'bg-emerald-100 text-emerald-900 dark:bg-emerald-950 dark:text-emerald-200' },
@@ -9,6 +11,8 @@ const TEXT: Record<ReviewResult, { title: string; cls: string }> = {
 
 // Ergebnis einer Abfrage mit Lösung. Enter oder Button geht weiter.
 export function Feedback({ result, solution, onNext }: { result: ReviewResult; solution: string; onNext: () => void }) {
+  useEffect(() => haptic.result(result), [result])
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') {
@@ -27,7 +31,7 @@ export function Feedback({ result, solution, onNext }: { result: ReviewResult; s
   const t = TEXT[result]
   return (
     <div className="space-y-3">
-      <div className={`rounded-2xl p-4 ${t.cls}`}>
+      <div className={`animate-pop rounded-2xl p-4 ${t.cls} ${result === 'wrong' ? 'animate-shake' : ''}`}>
         <p className="font-semibold">{t.title}</p>
         {result !== 'correct' && (
           <p className="mt-1">
@@ -35,7 +39,7 @@ export function Feedback({ result, solution, onNext }: { result: ReviewResult; s
           </p>
         )}
       </div>
-      <button type="button" autoFocus className="w-full rounded-xl bg-indigo-600 py-3 font-semibold text-white" onClick={onNext}>
+      <button type="button" autoFocus className={`w-full ${primary}`} onClick={onNext}>
         Weiter
       </button>
     </div>

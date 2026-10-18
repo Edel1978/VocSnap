@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import type { Lesson, Word } from '../../data/types'
 import {
@@ -24,6 +24,8 @@ import type { ModeResult } from '../../modes/types'
 import { useApp } from '../AppContext'
 import { ErrorBox, Loading, Section } from '../components'
 import { Confetti } from '../Confetti'
+import { Mascot } from '../Mascot'
+import { haptic } from '../haptics'
 import { button, muted, primary } from '../ui'
 import { useAsync } from '../useAsync'
 
@@ -50,7 +52,9 @@ function Learn() {
   const [params] = useSearchParams()
   const errorsOnly = params.get('fehler') === '1'
   const examDate = params.get('arbeit')
+  const quickStart = params.get('start') === '1'
   const [round, setRound] = useState<Round | null>(null)
+  const started = useRef(false)
 
   const [data] = useAsync(async () => {
     if (!profile) return null
@@ -60,8 +64,22 @@ function Learn() {
     const events = await store.listReviewEvents(profile.id)
     const wrong = errorsOnly ? wrongWordIds(events) : null
     const exam = examDate ? await loadExam(store, profile.id, examDate, settings.leitnerIntervals) : null
+    const states = computeStates(events)
+    // „Weiterlernen": sofort mit dem zuletzt gewählten Modus und allen fälligen Karten starten.
+    let quick: Round | null = null
+    if (quickStart) {
+      const mode = LEARNING_MODES[settings.learnMode] ? settings.learnMode : settings.modeOrder.find((m) => LEARNING_MODES[m])
+      const lessonOf = new Map(lessons.map((l) => [l.id, l]))
+      const pool = words.flat()
+      const items = buildItems(pool, settings.learnDirection, {
+        langs: (w) => ({ source: lessonOf.get(w.lesson_id)?.source_lang ?? '', target: lessonOf.get(w.lesson_id)?.target_lang ?? '' }),
+        filter: (i) => isDue(states.get(cardKey(i.word.id, i.direction)), settings.leitnerIntervals),
+      })
+      if (mode && items.length > 0) quick = { mode, session: startSession(items), pool }
+    }
     return {
-      states: computeStates(events),
+      states,
+      quick,
       // Erst die heute noch offenen Karten, danach zum Nachüben alle geplanten.
       planKeys: exam ? (exam.plan.openToday > 0 ? exam.plan.openKeys : exam.plan.todayKeys) : undefined,
       preselected: exam ? exam.lessons.map((l) => l.id) : params.get('lektionen')?.split(',').filter(Boolean),
@@ -70,7 +88,15 @@ function Learn() {
         words: wrong ? words[i].filter((w) => wrong.has(w.id)) : words[i],
       })),
     }
-  }, [store, profile, errorsOnly, examDate, settings.leitnerIntervals])
+    // Nur beim Öffnen auswerten, nicht bei jeder Einstellungsänderung.
+  }, [store, profile, errorsOnly, examDate, quickStart])
+
+  useEffect(() => {
+    if (!started.current && data.state === 'ready' && data.data?.quick) {
+      started.current = true
+      setRound(data.data.quick)
+    }
+  }, [data])
 
   if (!profile) return <ErrorBox>Bitte zuerst ein Profil anlegen.</ErrorBox>
   if (data.state === 'loading') return <Loading />
@@ -110,9 +136,12 @@ function Setup(props: {
   const [selected, setSelected] = useState<Set<string>>(
     () => new Set(props.preselected ?? props.lessons.map((x) => x.lesson.id)),
   )
-  const [dir, setDir] = useState<DirectionChoice>(planKeys ? 'both' : 'to_target')
+  const { updateSettings } = useApp()
+  const [dir, setDir] = useState<DirectionChoice>(planKeys ? 'both' : settings.learnDirection)
   const available = settings.modeOrder.filter((m) => LEARNING_MODES[m])
-  const [mode, setMode] = useState<ModeId | undefined>(available[0])
+  const [mode, setMode] = useState<ModeId | undefined>(
+    available.includes(settings.learnMode) ? settings.learnMode : available[0],
+  )
 
   if (props.lessons.length === 0) {
     return (
@@ -224,7 +253,11 @@ function Setup(props: {
         type="button"
         className={`${primary} w-full`}
         disabled={items.length === 0 || !mode}
-        onClick={() => mode && props.onStart(mode, items, words)}
+        onClick={() => {
+          if (!mode) return
+          if (!planKeys) updateSettings({ learnMode: mode, learnDirection: dir })
+          props.onStart(mode, items, words)
+        }}
       >
         Start ({items.length} {items.length === 1 ? 'Abfrage' : 'Abfragen'})
       </button>
@@ -278,6 +311,7 @@ function RoundView({
     const wrong = wrongItems(session)
     return (
       <div className="space-y-4">
+        <Mascot mood={s.wrong === 0 ? 'cheer' : 'happy'} className="mx-auto -mb-2 w-28" />
         <Section title="Runde beendet">
           <p className="text-lg">
             {s.correct} von {session.items.length} gewusst
@@ -355,6 +389,11 @@ function Reward(props: { profileId: string; pending: Promise<unknown>[]; saved: 
       goal: after.todayWords >= settings.dailyGoal && before.todayWords < settings.dailyGoal,
     }
   }, [store, props.profileId, props.pending, props.saved, settings.dailyGoal])
+
+  const celebrate = data.state === 'ready' && (data.data.levelUp !== null || data.data.goal)
+  useEffect(() => {
+    if (celebrate) haptic.celebrate()
+  }, [celebrate])
 
   if (data.state !== 'ready') return null
   const { xp, levelUp, goal } = data.data
