@@ -98,23 +98,45 @@ a,
   @apply outline-3 outline-offset-2 outline-indigo-500;
 }
 
-/* Start-Animation (Splash). Ablauf ca. 1,8 s, siehe Splash.tsx. */
-@keyframes splash-in-left {
+/* Start-Animation (Splash) passend zum Logo 4a. Ablauf siehe Splash.tsx. */
+@keyframes splash-card {
   from {
-    transform: translate(-160px, 40px) rotate(-40deg);
+    transform: translateY(140px) rotate(-70deg) scale(0.4);
     opacity: 0;
   }
-}
-@keyframes splash-in-right {
-  from {
-    transform: translate(160px, 40px) rotate(40deg);
-    opacity: 0;
+  70% {
+    transform: translateY(-8px) rotate(6deg) scale(1.08);
+    opacity: 1;
   }
 }
-@keyframes splash-in-top {
+@keyframes splash-ring {
   from {
-    transform: translateY(-180px) rotate(10deg);
+    transform: rotate(-220deg) scale(0.4);
     opacity: 0;
+  }
+  75% {
+    transform: rotate(12deg) scale(1.06);
+    opacity: 1;
+  }
+}
+@keyframes splash-snap {
+  50% {
+    transform: scale(0.92);
+  }
+}
+@keyframes splash-spark {
+  from {
+    transform: scale(0) rotate(-90deg);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.5) rotate(20deg);
+    opacity: 1;
+  }
+}
+@keyframes splash-twinkle {
+  50% {
+    transform: scale(0.75) rotate(45deg);
   }
 }
 @keyframes splash-flash {
@@ -123,16 +145,7 @@ a,
     opacity: 0;
   }
   30% {
-    opacity: 0.85;
-  }
-}
-@keyframes splash-pop {
-  from {
-    transform: scale(0.2) translateY(30px);
-    opacity: 0;
-  }
-  70% {
-    transform: scale(1.12);
+    opacity: 0.8;
   }
 }
 @keyframes splash-letter {

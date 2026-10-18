@@ -1,15 +1,19 @@
-import { useEffect, useState } from 'react'
-import { Mascot } from './Mascot'
+import { useEffect, useState, type CSSProperties } from 'react'
+import { LOGO, LogoCard, LogoRing, LogoSpark } from './Logo'
 
 // Nur einmal pro App-Start, nicht bei Seitenwechseln.
 let shown = false
-const TOTAL_MS = 1900
+const TOTAL_MS = 2300
 const REDUCED_MS = 600
 
-const ease = 'cubic-bezier(0.34, 1.56, 0.64, 1)'
-const anim = (name: string, ms: number, delay: number, timing = ease) => `${name} ${ms}ms ${timing} ${delay}ms both`
+const back = 'cubic-bezier(0.34, 1.56, 0.64, 1)'
+const anim = (...parts: [name: string, ms: number, delay: number, timing?: string, iter?: string][]) =>
+  parts.map(([name, ms, delay, timing = back, iter = '1']) => `${name} ${ms}ms ${timing} ${delay}ms ${iter} both`).join(', ')
+// SVG-Gruppen um ihre eigene Mitte drehen und skalieren.
+const own = (animation: string): CSSProperties => ({ animation, transformBox: 'fill-box', transformOrigin: 'center' })
 
-// Karten fliegen herein und stapeln sich, Blitz („Snap"), Snappy hüpft heraus, der Name erscheint.
+// Das Logo setzt sich zusammen: Kärtchen wirbelt herein, der Auslöser-Ring dreht sich darum ein,
+// es macht „Snap" (Blitz), der Funke leuchtet auf, dann erscheint der Name.
 export function Splash() {
   const [visible, setVisible] = useState(!shown)
 
@@ -23,44 +27,40 @@ export function Splash() {
 
   if (!visible) return null
 
-  const card = 'absolute h-24 w-20 rounded-2xl border-4 border-indigo-950 bg-white'
   return (
     <div
       role="presentation"
       onClick={() => setVisible(false)}
-      className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-gradient-to-br from-indigo-500 via-indigo-600 to-indigo-800"
-      style={{ animation: anim('splash-out', 300, TOTAL_MS - 300, 'ease-in') }}
+      className="fixed inset-0 z-[60] flex flex-col items-center justify-center"
+      style={{
+        background: `linear-gradient(135deg, ${LOGO.from}, ${LOGO.to})`,
+        animation: anim(['splash-out', 300, TOTAL_MS - 300, 'ease-in']),
+      }}
     >
-      <div className="relative flex h-40 w-40 items-center justify-center">
-        <div className={card} style={{ rotate: '-14deg', translate: '-18px 6px', animation: anim('splash-in-left', 450, 0) }} />
-        <div className={card} style={{ rotate: '12deg', translate: '18px 6px', animation: anim('splash-in-right', 450, 120) }} />
-        <div
-          className={`${card} bg-orange-400`}
-          style={{ rotate: '-2deg', animation: anim('splash-in-top', 450, 240) }}
-        />
-        <div className="absolute inset-0" style={{ animation: anim('splash-pop', 520, 760) }}>
-          <Mascot mood="cheer" className="h-full w-full drop-shadow-xl" />
-        </div>
-      </div>
-      <p className="mt-4 font-display text-5xl font-bold text-white" aria-label="VocSnap">
+      <svg viewBox="0 0 120 120" className="size-48 drop-shadow-2xl" aria-hidden="true" style={own(anim(['splash-snap', 260, 1000, 'ease-in-out']))}>
+        <LogoRing style={own(anim(['splash-ring', 650, 380]))} />
+        <LogoCard style={own(anim(['splash-card', 600, 0]))} />
+        <LogoSpark style={own(anim(['splash-spark', 420, 1100], ['splash-twinkle', 900, 1600, 'ease-in-out', 'infinite']))} />
+      </svg>
+      <p className="mt-2 font-display text-5xl font-bold text-white" aria-label="VocSnap">
         {'VocSnap'.split('').map((ch, i) => (
           <span
             key={i}
             aria-hidden="true"
             className={`inline-block ${i >= 3 ? 'text-orange-300' : ''}`}
-            style={{ animation: anim('splash-letter', 420, 1000 + i * 55) }}
+            style={{ animation: anim(['splash-letter', 420, 1200 + i * 55]) }}
           >
             {ch}
           </span>
         ))}
       </p>
-      <p className="mt-2 font-semibold text-indigo-100" style={{ animation: anim('splash-letter', 400, 1450) }}>
+      <p className="mt-2 font-semibold text-indigo-100" style={{ animation: anim(['splash-letter', 400, 1650]) }}>
         Fotografieren. Lernen. Können.
       </p>
-      {/* Kamerablitz */}
+      {/* Kamerablitz beim Einrasten des Rings */}
       <div
         className="pointer-events-none absolute inset-0 bg-white opacity-0"
-        style={{ animation: anim('splash-flash', 380, 560, 'ease-out') }}
+        style={{ animation: anim(['splash-flash', 380, 980, 'ease-out']) }}
       />
     </div>
   )
