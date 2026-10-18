@@ -27,7 +27,7 @@ Status: offen / in Arbeit / fertig.
 | E2 | bitte nachtragen | bitte nachtragen |
 | E3 | bitte nachtragen | bitte nachtragen |
 | E2b | bitte nachtragen | bitte nachtragen |
-| E4 | bitte nachtragen | bitte nachtragen |
+| E4 | ca. 26 % (ca. 26 $, gesamt seit E0) | ca. 74 % (ca. 73 $) |
 
 Der Verbrauch ist in der Sitzung nicht sichtbar und muss in der Abrechnung nachgesehen werden.
 
@@ -37,9 +37,8 @@ Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 Stand 2026-10-18: E0 bis E4 und E2b sind fertig.
 
-1. Verbrauchtes Guthaben für alle Etappen in der Tabelle oben nachtragen und prüfen, ob die 70-%-Grenze erreicht ist. Davon hängt ab, ob E5 noch ganz gebaut wird.
-2. Sprachausgabe (Hören und Schreiben) auf dem Handy prüfen.
-3. E5 beginnen (siehe `SPEC.md`, Abschnitt 6).
+1. Sprachausgabe (Hören und Schreiben) auf dem Handy prüfen.
+2. E5 beginnen (siehe `SPEC.md`, Abschnitt 6). Guthaben reicht, nach E4 ca. 26 % verbraucht.
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
 
