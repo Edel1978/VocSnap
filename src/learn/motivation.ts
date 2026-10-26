@@ -1,5 +1,6 @@
 import type { ReviewEvent, ReviewResult } from '../data/types'
 import { dayNumber } from './leitner'
+import { QUEST_BONUS, questOf, questProgress, type Quest } from './quests'
 
 export const XP: Record<ReviewResult, number> = { correct: 10, half: 5, wrong: 1 }
 // Bonus je Tag mit erreichtem Tagesziel und je fehlerfreier Runde.
@@ -70,6 +71,9 @@ export interface Stats {
   // Tage, an denen das Tagesziel erreicht wurde.
   goalDays: number
   perfectRounds: number
+  // Snappys Aufgabe heute und Fortschritt.
+  quest: Quest
+  questProgress: number
   // Tage mit mindestens einer Abfrage (dayNumber), z. B. für die Wochenleiste.
   activeDays: Set<number>
   // Abfragen je Tag (dayNumber), für den Lern-Kalender.
@@ -171,6 +175,27 @@ export function computeStats(events: ReviewEvent[], dailyGoal: number, now: Date
     if (inWeek(d)) weekXp += PERFECT_BONUS
   }
 
+  // Tagesaufgaben: Tag für Tag durchgehen, letztes Ergebnis je Wort vor dem Tag merken.
+  const byDay = new Map<number, ReviewEvent[]>()
+  for (const e of active) {
+    const d = dayNumber(new Date(e.at))
+    if (!byDay.has(d)) byDay.set(d, [])
+    byDay.get(d)!.push(e)
+  }
+  const last = new Map<string, ReviewResult>()
+  let todayQuest = 0
+  for (const d of [...byDay.keys()].sort((a, b) => a - b)) {
+    const evs = byDay.get(d)!
+    const q = questOf(d)
+    const progress = questProgress(q, evs, last)
+    if (d === today) todayQuest = progress
+    if (progress >= q.target) {
+      xp += QUEST_BONUS
+      if (inWeek(d)) weekXp += QUEST_BONUS
+    }
+    for (const e of evs) last.set(e.word_id, e.result)
+  }
+
   const days = [...activeDays].sort((a, b) => a - b)
   const streak = computeStreak(days, today)
 
@@ -187,6 +212,8 @@ export function computeStats(events: ReviewEvent[], dailyGoal: number, now: Date
     reviews: active.length,
     goalDays: goalDayList.length,
     perfectRounds: perfect.length,
+    quest: questOf(today),
+    questProgress: todayQuest,
     activeDays,
     reviewsPerDay,
     modesUsed: modes.size,
