@@ -4,6 +4,7 @@ import { dayNumber } from '../../learn/leitner'
 import { BADGES, badgeCount, badgeProgress, rankOf, STREAK_FREEZES, TIER_NAMES } from '../../learn/motivation'
 import { useApp } from '../AppContext'
 import { ErrorBox, Loading, PageTitle, Section } from '../components'
+import { Emoji, type EmojiName } from '../Emoji'
 import { Icon } from '../icons'
 import { Mascot } from '../Mascot'
 import { loadStats, type ProfileStats } from '../stats'
@@ -28,7 +29,6 @@ export function AchievementsPage() {
   if (!mine) return <Loading />
   const ranked = [...data.data].sort((a, b) => (board === 'week' ? b.stats.weekXp - a.stats.weekXp : b.stats.xp - a.stats.xp))
   const score = (s: ProfileStats) => (board === 'week' ? s.weekXp : s.xp)
-  const count = badgeCount(mine)
 
   return (
     <div className="space-y-4">
@@ -60,13 +60,7 @@ export function AchievementsPage() {
         <Heatmap perDay={mine.reviewsPerDay} frozen={mine.frozenDays} />
       </Section>
 
-      <Section title={`Abzeichen · ${count.earned} von ${count.total}`}>
-        <ul className="grid grid-cols-3 gap-2">
-          {BADGES.map((b, i) => (
-            <BadgeTile key={b.id} badge={b} stats={mine} delay={i * 40} />
-          ))}
-        </ul>
-      </Section>
+      <Badges stats={mine} />
 
       {ranked.length > 1 && (
         <Section
@@ -163,56 +157,129 @@ function LevelCard({ stats }: { stats: ProfileStats }) {
   )
 }
 
-// Farben je Stufe: Bronze, Silber, Gold, Diamant.
-const TIER_STYLES = [
-  'from-orange-100 to-amber-200 dark:from-orange-950 dark:to-amber-900',
-  'from-zinc-100 to-zinc-300 dark:from-zinc-800 dark:to-zinc-600',
-  'from-amber-100 to-yellow-300 dark:from-amber-900 dark:to-yellow-700',
-  'from-sky-100 to-indigo-200 dark:from-sky-900 dark:to-indigo-800',
-]
-const TIER_DOTS = ['bg-orange-400', 'bg-zinc-400', 'bg-amber-400', 'bg-sky-400']
+// Stufenfarben: Bronze, Silber, Gold, Diamant (Rahmen, Schild, Schrift).
+const TIER_RING = ['border-orange-500', 'border-zinc-400', 'border-amber-400', 'border-sky-400']
+const TIER_BG = ['bg-orange-600', 'bg-zinc-400', 'bg-amber-500', 'bg-sky-500']
+const TIER_TEXT = ['text-orange-600', 'text-zinc-500', 'text-amber-600', 'text-sky-600']
+// Farbe des Balkens = Farbe der nächsten Stufe.
+const TIER_BAR = ['bg-orange-400', 'bg-zinc-400', 'bg-amber-400', 'bg-sky-400']
+const BADGE_EMOJI: Record<string, EmojiName> = {
+  reviews: 'hundred', streak: 'fire', goal: 'target', level: 'star', box5: 'brain', words: 'camera',
+  perfect: 'sparkles', modes: 'game', early: 'sunrise', night: 'owl', comeback: 'muscle', exam: 'memo',
+}
+const HINTS: Record<string, string> = {
+  early: 'Lern mal ganz früh am Morgen …',
+  night: 'Wer lernt noch spät am Abend?',
+  comeback: 'Manchmal braucht man eine Pause …',
+  exam: 'Gut vorbereitet in die Prüfung …',
+}
 
-function BadgeTile({ badge: b, stats, delay }: { badge: (typeof BADGES)[number]; stats: ProfileStats; delay: number }) {
-  const { tier, value, next } = badgeProgress(b, stats)
+type Filter = 'all' | 'close' | 'earned'
+
+function Badges({ stats }: { stats: ProfileStats }) {
+  const [filter, setFilter] = useState<Filter>('all')
+  const list = BADGES.map((b) => ({ b, p: badgeProgress(b, stats) }))
+  const ratio = (x: (typeof list)[number]) => (x.p.next ? Math.min(x.p.value, x.p.next) / x.p.next : 0)
+  const count = badgeCount(stats)
+  const medals = [0, 1, 2, 3].map((t) => list.filter((x) => Math.min(x.p.tier, 4) - 1 === t).length)
+  const close = list.filter((x) => !x.b.secret && x.p.next !== undefined).sort((a, b) => ratio(b) - ratio(a))[0]
+  const shown = list.filter((x) => (filter === 'earned' ? x.p.tier > 0 : filter === 'close' ? !x.b.secret && x.p.next !== undefined && ratio(x) >= 0.5 : true))
+  return (
+    <section className="space-y-3">
+      <div className="flex items-baseline justify-between">
+        <h2 className="text-2xl font-semibold">Abzeichen</h2>
+        <span className={muted}>
+          {count.earned} von {count.total} Stufen
+        </span>
+      </div>
+      <div className="flex justify-around rounded-3xl bg-gradient-to-r from-indigo-600 to-violet-600 p-3 text-white">
+        {TIER_NAMES.map((name, t) => (
+          <div key={name} className="text-center">
+            <b className="block font-display text-xl">{medals[t]}</b>
+            <span className="text-[10px] font-bold opacity-90">{['🥉', '🥈', '🥇', '💎'][t]} {name}</span>
+          </div>
+        ))}
+      </div>
+      {close && ratio(close) > 0 && (
+        <div className="flex items-center gap-3 rounded-3xl bg-amber-50 p-3 ring-2 ring-amber-200 dark:bg-amber-950 dark:ring-amber-800">
+          <Emoji name={BADGE_EMOJI[close.b.id]} className="size-10" />
+          <span className="min-w-0 flex-1">
+            <b className="block font-display text-sm">
+              Fast geschafft: {close.b.title} {close.b.targets.length > 1 ? TIER_NAMES[close.p.tier] : ''}
+            </b>
+            <span className="text-xs text-slate-600 dark:text-slate-300">
+              {close.p.value} von {close.p.next}, du schaffst das!
+            </span>
+          </span>
+        </div>
+      )}
+      <div className="flex gap-1.5 text-xs font-bold">
+        {(
+          [
+            ['all', 'Alle'],
+            ['close', 'Fast geschafft'],
+            ['earned', 'Erreicht'],
+          ] as const
+        ).map(([k, label]) => (
+          <button key={k} type="button" onClick={() => setFilter(k)} className={`rounded-full px-3 py-1 ${filter === k ? 'bg-indigo-600 text-white' : 'bg-white shadow-card dark:bg-slate-800'}`}>
+            {label}
+          </button>
+        ))}
+      </div>
+      <ul className="grid grid-cols-3 gap-2.5">
+        {shown.map(({ b, p }, i) => (
+          <BadgeTile key={b.id} badge={b} progress={p} delay={i * 30} />
+        ))}
+      </ul>
+      {shown.length === 0 && <p className={`${muted} text-center`}>Hier ist noch nichts. Weiter so!</p>}
+    </section>
+  )
+}
+
+function BadgeTile({ badge: b, progress, delay }: { badge: (typeof BADGES)[number]; progress: ReturnType<typeof badgeProgress>; delay: number }) {
+  const { tier, value, next } = progress
   const tiered = b.targets.length > 1
   if (b.secret && tier === 0) {
     return (
-      <li style={{ animationDelay: `${delay}ms` }} className="flex animate-pop flex-col items-center justify-center rounded-2xl border-2 border-dashed border-slate-200 p-2 text-center dark:border-slate-700">
-        <div className="text-3xl text-slate-300 dark:text-slate-600" aria-hidden="true">
-          ?
-        </div>
-        <div className="text-sm leading-tight font-bold text-slate-400">Geheim</div>
+      <li style={{ animationDelay: `${delay}ms` }} className="animate-pop rounded-3xl border-2 border-dashed border-slate-200 p-2.5 pt-3 text-center dark:border-slate-700">
+        <span className="mx-auto flex h-14 w-[86px] items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+          <Emoji name="lock" className="size-9 opacity-70" />
+        </span>
+        <b className="mt-1.5 block text-sm text-slate-500">Geheim</b>
+        <span className="text-[10px] leading-tight text-slate-400">{HINTS[b.id]}</span>
       </li>
     )
   }
-  const prev = tier > 0 ? b.targets[tier - 1] : 0
+  const t = Math.min(tier, 4) - 1
+  const tierName = tier > 0 ? (tiered ? TIER_NAMES[t] : 'Erreicht') : 'noch keine'
   return (
     <li
       style={{ animationDelay: `${delay}ms` }}
-      className={`animate-pop rounded-2xl p-2 text-center ${tier > 0 ? `bg-gradient-to-b ${TIER_STYLES[Math.min(tier, 4) - 1]}` : 'bg-slate-100 dark:bg-slate-800'}`}
+      className={`relative animate-pop rounded-3xl bg-white p-2.5 pt-3 text-center shadow-card dark:bg-slate-900 dark:shadow-card-dark ${t >= 2 ? 'shadow-[0_0_18px_rgb(251_191_36/0.5)]' : ''}`}
     >
-      <div className={`text-3xl ${tier > 0 ? '' : 'opacity-40 grayscale'}`} aria-hidden="true">
-        {b.icon}
-      </div>
-      <div className="text-sm leading-tight font-bold">{b.title}</div>
-      {tiered && (
-        <div className="mt-1 flex justify-center gap-1" aria-label={tier > 0 ? `Stufe ${TIER_NAMES[tier - 1]}` : 'Noch keine Stufe'}>
-          {b.targets.map((_, n) => (
-            <span key={n} className={`size-2 rounded-full ${n < tier ? TIER_DOTS[n] : 'bg-white dark:bg-slate-700'}`} />
-          ))}
-        </div>
+      {tier > 0 && tiered && (
+        <span className={`absolute top-1.5 right-1.5 rounded-full px-1.5 text-[9px] font-extrabold text-white ${TIER_BG[t]}`}>{TIER_NAMES[t][0]}</span>
       )}
+      <span
+        className={`mx-auto flex h-14 w-[86px] items-center justify-center rounded-full border-[3.5px] bg-gradient-to-b from-white to-slate-50 dark:from-slate-800 dark:to-slate-900 ${
+          tier > 0 ? TIER_RING[t] : 'border-dashed border-slate-200 dark:border-slate-700'
+        }`}
+      >
+        <Emoji name={BADGE_EMOJI[b.id]} className={`size-10 ${tier > 0 ? '' : 'opacity-50 grayscale'}`} />
+      </span>
+      <b className="mt-1.5 block text-sm leading-tight">{b.title}</b>
+      <span className={`text-[11px] font-extrabold ${tier > 0 ? TIER_TEXT[t] : 'text-slate-400'}`}>{tierName}</span>
       {next === undefined ? (
-        <div className="mt-0.5 text-[11px] text-slate-600 dark:text-slate-300">{b.describe(prev)}</div>
+        <span className="mt-0.5 block text-[10px] leading-tight text-slate-500">{b.describe(b.targets[b.targets.length - 1])}</span>
       ) : (
         <>
-          <div className="mx-1 mt-1.5 h-1.5 overflow-hidden rounded-full bg-white dark:bg-slate-700">
-            <div className="h-full rounded-full bg-indigo-500" style={{ width: `${(Math.min(value, next) / next) * 100}%` }} />
-          </div>
-          <div className="mt-0.5 text-[11px] leading-tight text-slate-500">
-            {tiered ? `${TIER_NAMES[tier]}: ` : ''}
-            {b.describe(next)}
-          </div>
+          <span className="mt-1 block h-1.5 overflow-hidden rounded-full bg-slate-100 dark:bg-slate-800">
+            <span className={`block h-full rounded-full ${TIER_BAR[Math.min(tier, 3)]}`} style={{ width: `${(Math.min(value, next) / next) * 100}%` }} />
+          </span>
+          <span className="text-[10px] leading-tight text-slate-500">
+            {value} / {next}
+            {tiered ? ` für ${TIER_NAMES[tier]}` : ''}
+          </span>
         </>
       )}
     </li>
