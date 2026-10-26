@@ -115,7 +115,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
 
   // Füllt die Bildschirmhöhe: die Kacheln wachsen mit, gescrollt wird nur auf sehr kleinen Handys.
   return (
-    <div className="flex min-h-[calc(100dvh-7.5rem)] flex-col gap-2.5 pt-3">
+    <div className="flex min-h-[calc(100dvh-8.25rem)] flex-col gap-2.5">
       <header className="flex items-center gap-2">
         <Mascot mood={mood} className="w-11 shrink-0" />
         <div className="min-w-0 flex-1">
@@ -313,10 +313,10 @@ const examWhen = (e: ExamData) => (e.plan.daysLeft === 0 ? 'heute' : e.plan.days
 function HomeTile(props: { to: string; emoji: EmojiName; colors: string; title: string; text: string; big?: string }) {
   return (
     <Link to={props.to} className={`relative flex animate-pop items-center gap-2.5 overflow-hidden rounded-3xl bg-gradient-to-br ${props.colors} p-3 text-white`}>
-      <Emoji name={props.emoji} className="size-10 drop-shadow" />
-      <span className="min-w-0">
-        <b className="block truncate font-display leading-tight">{props.title}</b>
-        <span className="text-[11px] font-semibold opacity-90">{props.text}</span>
+      <Emoji name={props.emoji} className="size-9 drop-shadow" />
+      <span className="relative min-w-0">
+        <b className="block font-display text-[15px] leading-tight">{props.title}</b>
+        <span className="block text-[11px] leading-tight font-semibold opacity-90">{props.text}</span>
       </span>
       {props.big && <span className="pointer-events-none absolute -right-1 -bottom-4 font-display text-6xl font-bold opacity-20">{props.big}</span>}
     </Link>

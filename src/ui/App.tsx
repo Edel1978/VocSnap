@@ -1,9 +1,8 @@
 import type { ReactNode } from 'react'
-import { HashRouter, Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { AppProvider, useApp } from './AppContext'
+import { HashRouter, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
+import { AppProvider } from './AppContext'
 import { ErrorBoundary } from './ErrorBoundary'
 import { Emoji, type EmojiName } from './Emoji'
-import { Logo } from './Logo'
 import { AchievementsPage } from './pages/AchievementsPage'
 import { ExamEditPage, ExamPage } from './pages/ExamPages'
 import { HomePage } from './pages/HomePage'
@@ -32,30 +31,6 @@ const tab = ({ isActive }: { isActive: boolean }) =>
       : 'text-slate-400 dark:text-slate-500'
   }`
 
-// Auf der Startseite übernimmt die Begrüßung den Kopf.
-function Header() {
-  const { profile } = useApp()
-  if (useLocation().pathname === '/') return null
-  return (
-    <header className="flex items-center justify-between px-4 pt-4 pb-2">
-      <Link to="/" className="flex items-center gap-2 font-display text-2xl font-bold">
-        <Logo className="size-9 drop-shadow" />
-        <span>
-          Voc<span className="text-orange-500">Snap</span>
-        </span>
-      </Link>
-      {profile && (
-        <Link
-          to="/einstellungen/profil"
-          aria-label="Profile"
-          className="flex size-10 items-center justify-center rounded-full bg-orange-100 text-xl dark:bg-slate-800"
-        >
-          {profile.avatar || '🙂'}
-        </Link>
-      )}
-    </header>
-  )
-}
 
 // Beim Seitenwechsel neu anfangen, damit ein Fehler nicht die ganze App blockiert.
 function ErrorBoundaryForPath({ children }: { children: ReactNode }) {
@@ -72,8 +47,7 @@ export function App() {
           <div className="absolute top-80 -left-28 size-56 rounded-full bg-orange-200 opacity-50 blur-3xl dark:bg-orange-900/20" />
         </div>
         <div className="mx-auto flex min-h-dvh max-w-xl flex-col">
-          <Header />
-          <main className="flex-1 px-4 pb-28">
+          <main className="flex-1 px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-28">
             <ErrorBoundaryForPath>
               <Routes>
                 <Route path="/" element={<HomePage />} />
