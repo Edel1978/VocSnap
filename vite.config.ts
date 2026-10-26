@@ -43,7 +43,7 @@ export default defineConfig({
       },
       workbox: {
         // App-Hülle sofort offline. Tesseract (ca. 17 MB) erst beim ersten Scan zwischenspeichern.
-        globPatterns: ['**/*.{js,css,html,svg,png,webmanifest,woff2}'],
+        globPatterns: ['**/*.{js,css,html,svg,png,webp,webmanifest,woff2}'],
         globIgnores: ['tesseract/**'],
         navigateFallback: 'index.html',
         runtimeCaching: [
