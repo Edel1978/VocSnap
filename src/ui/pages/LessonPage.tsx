@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { languageColor, languageLabel } from '../../config/languages'
 import type { Direction, Word } from '../../data/types'
 import { exampleWords } from '../../data/examples'
 import { BOXES, boxOf, cardKey, computeStates } from '../../learn/leitner'
 import { useApp } from '../AppContext'
 import { Empty, ErrorBox, Loading, PageTitle, Section } from '../components'
+import { Emoji } from '../Emoji'
 import { Icon } from '../icons'
 import { LessonForm } from '../LessonForm'
 import { button, card, danger, input, muted, primary, wordsLabel } from '../ui'
@@ -17,6 +18,7 @@ const DIRS: Direction[] = ['to_target', 'to_source']
 export function NewLessonPage() {
   const { store, profile } = useApp()
   const navigate = useNavigate()
+  const weiter = useSearchParams()[0].get('weiter')
   if (!profile) return <ErrorBox>Bitte zuerst ein Profil anlegen.</ErrorBox>
   return (
     <Section title="Neue Lektion">
@@ -25,7 +27,8 @@ export function NewLessonPage() {
           submitLabel="Anlegen"
           onSubmit={async (l) => {
             const lesson = await store.createLesson({ ...l, profile_id: profile.id })
-            navigate(`/lektion/${lesson.id}`, { replace: true })
+            // Aus dem Neu-Menü: direkt weiter zur KI-Wortliste.
+            navigate(`/lektion/${lesson.id}${weiter === 'ki' ? '/ki' : ''}`, { replace: true })
           }}
         />
       </div>
@@ -113,7 +116,7 @@ export function LessonPage() {
           </div>
           {words.length > 0 && (
             <Link to={`/lernen?lektionen=${lesson.id}`} data-tour="learn-lesson" className={`${primary} mt-4 flex items-center justify-center gap-2`}>
-              <Icon name="play" /> Diese Lektion lernen
+              <Emoji name="rocket" /> Diese Lektion lernen
             </Link>
           )}
         </section>
@@ -157,20 +160,25 @@ export function LessonPage() {
                 }
               }}
             >
-              <Icon name="sparkle" className="size-5 text-orange-500" /> Mit Beispielwörtern ausprobieren
+              <Emoji name="sparkles" className="size-6" /> Mit Beispielwörtern ausprobieren
             </button>
           )}
           {saveError && <ErrorBox>Die Beispielwörter konnten nicht gespeichert werden.</ErrorBox>}
-          <div className="grid grid-cols-2 gap-2">
-            <Link to={`/lektion/${lesson.id}/scan`} className={`${button} flex items-center justify-center gap-2 py-3`}>
-              <Icon name="camera" className="size-5" /> Foto scannen
-            </Link>
-            <Link to={`/lektion/${lesson.id}/einfuegen`} className={`${button} flex items-center justify-center gap-2 py-3`}>
-              <Icon name="list" className="size-5" /> Liste einfügen
-            </Link>
-            <Link to={`/lektion/${lesson.id}/ki`} className={`${button} col-span-2 flex items-center justify-center gap-2 py-3`}>
-              <Icon name="sparkle" className="size-5 text-orange-500" /> Mit KI erstellen: Situation oder Text
-            </Link>
+          <div className="grid grid-cols-3 gap-2">
+            {(
+              [
+                ['scan', 'camera', 'Foto', 'bg-sky-100 dark:bg-sky-950'],
+                ['ki', 'sparkles', 'Mit KI', 'bg-orange-100 dark:bg-orange-950'],
+                ['einfuegen', 'memo', 'Liste', 'bg-emerald-100 dark:bg-emerald-950'],
+              ] as const
+            ).map(([path, emoji, label, bg]) => (
+              <Link key={path} to={`/lektion/${lesson.id}/${path}`} className={`${card} flex flex-col items-center gap-1.5 py-3 text-sm font-bold`}>
+                <span className={`flex size-12 items-center justify-center rounded-2xl ${bg}`}>
+                  <Emoji name={emoji} className="size-8" />
+                </span>
+                {label}
+              </Link>
+            ))}
           </div>
           <Section title="Von Hand eintragen">
             <WordForm
@@ -208,6 +216,18 @@ export function LessonPage() {
                       reload()
                     }}
                   />
+                  <button
+                    type="button"
+                    className={`${danger} mt-1`}
+                    onClick={async () => {
+                      if (!confirm(`„${w.term}" löschen?`)) return
+                      await store.deleteWord(w.id)
+                      setEditingWord(null)
+                      reload()
+                    }}
+                  >
+                    Wort löschen
+                  </button>
                 </li>
               ) : (
                 <WordRow
@@ -215,10 +235,6 @@ export function LessonPage() {
                   word={w}
                   box={boxOfWord.get(w.id) ?? 1}
                   onEdit={() => setEditingWord(w.id)}
-                  onDelete={async () => {
-                    await store.deleteWord(w.id)
-                    reload()
-                  }}
                 />
               ),
             )}
@@ -231,33 +247,19 @@ export function LessonPage() {
 }
 
 // Punkte zeigen, wie sicher das Wort sitzt (Fach 1–5).
-function BoxDots({ box }: { box: number }) {
-  return (
-    <span className="flex gap-0.5" aria-label={`Fach ${box} von ${BOXES}`} title={`Fach ${box}`}>
-      {Array.from({ length: BOXES }, (_, i) => (
-        <span key={i} className={`size-1.5 rounded-full ${i < box ? 'bg-emerald-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
-      ))}
-    </span>
-  )
-}
 
-function WordRow({ word, box, onEdit, onDelete }: { word: Word; box: number; onEdit: () => void; onDelete: () => void }) {
+// Fach als Farbpunkt: rot neu, gelb wackelig, grün sicher. Antippen öffnet Bearbeiten (dort auch Löschen).
+function WordRow({ word, box, onEdit }: { word: Word; box: number; onEdit: () => void }) {
+  const dot = box <= 1 ? 'bg-rose-400' : box === 2 ? 'bg-amber-400' : 'bg-emerald-500'
   return (
-    <li className="flex items-center gap-2 py-2.5">
-      <button type="button" className="min-w-0 flex-1 text-left" onClick={onEdit}>
-        <span className="block truncate font-medium">{word.term}</span>
-        <span className={`block truncate ${muted}`}>{word.translation}</span>
-      </button>
-      <BoxDots box={box} />
-      <button
-        type="button"
-        className={danger}
-        aria-label={`${word.term} löschen`}
-        onClick={() => {
-          if (confirm(`„${word.term}" löschen?`)) onDelete()
-        }}
-      >
-        ✕
+    <li>
+      <button type="button" className="flex w-full items-center gap-3 py-2.5 text-left" onClick={onEdit} title={`Fach ${box} von ${BOXES}`}>
+        <span className={`size-2.5 shrink-0 rounded-full ${dot}`} aria-label={`Fach ${box}`} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate font-semibold">{word.term}</span>
+          <span className={`block truncate ${muted}`}>{word.translation}</span>
+        </span>
+        <Icon name="chevron" className="size-4 text-slate-300" />
       </button>
     </li>
   )

@@ -19,7 +19,8 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | R3 Belohnungen und Anleitung | fertig | Neue Level-Kurve mit Rängen, Abzeichen in Stufen, Streak-Schutz |
 | R4 Geführte Einführung | fertig | Führung durch die echte App (Spotlight, Snappy-Sprechblase), Beispielwörter, Startton ohne Knopf |
 | R5 Aussprache und Fehlerbehebung | fertig | Lernmodus Aussprache (einschaltbar), 12 Fehler und Verbesserungen aus der Durchsicht |
-| R6 Testplaner und KI-Wortlisten | in Arbeit | Vokabeltests und Klassenarbeiten (Schema 2), KI-Wortlisten zu Situation oder Text, strengere Aussprache. Pull Request offen |
+| R6 Testplaner und KI-Wortlisten | fertig | Vokabeltests und Klassenarbeiten (Schema 2), KI-Wortlisten zu Situation oder Text, strengere Aussprache |
+| R7 Umgestaltung | fertig | Startseite ohne Scrollen, Snappys Tagesaufgabe, 3D-Symbole, Abzeichen mit Vitrine, Lektion, Neu-Menü, Einstellungen, Einführung angepasst |
 | E5 Motivation und Feinschliff | fertig | XP, Level, Streak, Tagesziel, Abzeichen, Bestenliste, Konfetti, Avatare, App-Icons, Offline (PWA), Navigation mit Icons |
 
 Status: offen / in Arbeit / fertig.
@@ -36,7 +37,7 @@ Status: offen / in Arbeit / fertig.
 | E4 | ca. 26 % (ca. 26 $, gesamt seit E0) | ca. 74 % (ca. 73 $) |
 | E5 | bitte nachtragen | bitte nachtragen |
 | R1–R5 | ca. 79 % (ca. 78 $, gesamt seit E0) | ca. 21 $ |
-| R6 | bitte nachtragen | bitte nachtragen |
+| R6 + Entwürfe R7 | ca. 97 % (Rest ca. 3 $, Stand 2026-10-26) | ca. 3 $ |
 
 Der Verbrauch ist in der Sitzung nicht sichtbar und muss in der Abrechnung nachgesehen werden.
 
@@ -44,12 +45,19 @@ Startguthaben: 99 $. Ab ca. 95 % Verbrauch nur noch Fehlerbehebung und Feinschli
 
 ## Nächste Schritte
 
-Stand 2026-10-26: R6 gebaut, Pull Request offen. Der Nutzer merged selbst.
+Stand 2026-10-26: R7 auf ausdrücklichen Wunsch des Nutzers trotz Guthaben-Grenze umgesetzt (Pull Request offen). Guthaben danach praktisch aufgebraucht. Nächste Sitzung: Rückmeldung zu R7 einholen, nur noch Fehler beheben. Noch nicht gemacht aus der Liste unten: Fortschrittsleiste neu/wackelig/sicher in der Lektion, Seiten Lernen/Erfolge nur teilweise angeglichen.
 
-1. Rückmeldung zur Aussprache abwarten: Wenn sie nicht besser wird, Modus wieder entfernen (Wunsch des Nutzers). Echte Aussprache-Bewertung (z. B. Azure Pronunciation Assessment) steht auf der Wunschliste.
-2. KI-Wortlisten mit echten Keys prüfen lassen (Gemini und Groq, Situation und Text).
-3. Der Nutzer hat beim Testen weitere Fehler gefunden, aber noch nicht geschickt: erfragen und zuerst beheben.
-4. Guthaben nach R6 erfragen und eintragen (Grenze jetzt 95 %).
+**R7 Umgestaltung, vom Nutzer so entschieden (umgesetzt, Details siehe unten)** (Entwürfe und Bild in `docs/entwurf-r7/`):
+1. Startseite wie `home-g`: muss ohne Scrollen auf einen Handy-Bildschirm passen und die volle Höhe nutzen (kein leerer grauer Streifen unten, z. B. Lektionskarten bzw. Kacheln mitwachsen lassen). Reihenfolge: Begrüßung mit Snappy, „Heute dran“ mit Tagesziel-Ring und Weiterlernen, Karte mit Serie (Flamme, Wochentage, Level) plus „Snappys Aufgabe“, vier bunte Kacheln (Vokabeltest, Klassenarbeit, Fehler, Level/Rang; ohne Termin „Test planen“, ohne Fehler „Frei üben“), Lektionen als farbige Wischkarten mit „+ Neu“.
+2. Snappys Aufgabe (neu): täglich wechselnde kleine Aufgabe aus dem Lernverlauf berechnet (z. B. 5 richtig am Stück, 2 Runden, anderer Lernmodus, 3 Fehler ausbügeln), +20 XP bei Erfolg, keine Datenbankänderung.
+3. „+ Neu“-Menü: Foto scannen, Mit KI, Leere Lektion, Test planen.
+4. Bunte 3D-Symbole (Microsoft Fluent Emoji, MIT) statt Strich-Icons: untere Leiste, Startseite, Lektion, Neu-Menü, Abzeichen. Lokal ausliefern, verkleinert (webp).
+5. Abzeichen wie `badges-b`: Vitrine mit Medaillen-Zählung, „Fast geschafft“, Filter, ovaler Rahmen in Stufenfarbe, Stufen-Schild, gestrichelt wenn offen, Schloss für geheime.
+6. Lektion wie `lektion2`: Fortschrittsleiste neu/wackelig/sicher, vier Kacheln Foto/KI/Liste/Tippen, Farbpunkte statt roter ✕ (Antippen = bearbeiten/löschen).
+7. Einstellungen Lernen: Tagesziel mit −/+ und Schnellwahl, „Für Profis“ eingeklappt (`einst.body`). Lernen und Erfolge nur angleichen.
+8. Danach Einführung (`src/ui/tour/steps.ts`) an das neue Layout anpassen.
+
+Außerdem offen: Rückmeldung zu Aussprache und KI-Wortlisten, vom Nutzer gefundene Fehler erfragen.
 
 Arbeitsweise mit dem Nutzer: erst Plan oder Screenshots zeigen, dann bauen; Pull Request nur auf Wunsch, er merged selbst, danach Pull Request beobachten. Antworten auf Deutsch, einfach erklärt.
 
@@ -162,6 +170,7 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Datensicherheit: `navigator.storage.persist()` nach dem ersten Profil. Letzter Export in `settings.lastBackup`; ab 20 Wörtern erinnert die Startseite, wenn nie oder vor 14 Tagen gesichert wurde (`src/data/backup.ts`).
 - PWA: `registerType: 'prompt'`, `UpdateWatcher` lädt neue Versionen nur auf Start- oder Erfolge-Seite. Tesseract-Cache heißt nach den Paketversionen, ältere Caches werden beim Start gelöscht.
 - Kontrast: `slate-400/500` im hellen Modus dunkler, im dunklen Modus heller (`src/index.css`).
+- R7: 3D-Symbole als `public/emoji/*.webp` (Fluent Emoji, MIT, Lizenz daneben), Komponente `Emoji`. Startseite füllt die Bildschirmhöhe (`min-h-[calc(100dvh-7.5rem)]`, Kacheln wachsen mit). Snappys Tagesaufgabe in `src/learn/quests.ts` (täglich wechselnd nach dayNumber, +20 XP, aus Ereignissen berechnet). Neu-Menü `src/ui/NewSheet.tsx` (`/lektion/neu?weiter=ki` springt nach dem Anlegen zur KI-Seite). Wörter löschen nur noch im Bearbeiten-Modus.
 - Beispielwörter (`src/data/examples.ts`): erfundene Grundwörter Englisch/Französisch ↔ Deutsch, Knopf nur in leeren Lektionen.
 - Töne per Web Audio (keine Dateien): Start-Melodie mit Auslöser-Klick, Töne bei richtig/halb/falsch und Erfolg. Abschaltbar unter Darstellung. Browser spielen Ton oft erst nach einer Berührung (z. B. Samsung). Ist der Ton gesperrt, bleibt der Start still (Wunsch des Nutzers, kein Knopf). Der gesperrte Audio-Kontext wird verworfen, damit die Melodie nicht später unpassend erklingt.
 - Fehlertoleranz (offene Punkte aus der SPEC vorläufig so entschieden, änderbar in `tolerance.ts`):

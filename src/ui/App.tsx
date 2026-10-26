@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import { HashRouter, Link, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
 import { AppProvider, useApp } from './AppContext'
 import { ErrorBoundary } from './ErrorBoundary'
-import { Icon, type IconName } from './icons'
+import { Emoji, type EmojiName } from './Emoji'
 import { Logo } from './Logo'
 import { AchievementsPage } from './pages/AchievementsPage'
 import { ExamEditPage, ExamPage } from './pages/ExamPages'
@@ -18,9 +18,9 @@ import { SettingsGroupPage, SettingsPage } from './pages/SettingsPage'
 import { Tour } from './tour/Tour'
 import { UpdateWatcher } from './UpdateWatcher'
 
-const TABS: { to: string; label: string; icon: IconName }[] = [
-  { to: '/', label: 'Start', icon: 'home' },
-  { to: '/lernen', label: 'Lernen', icon: 'book' },
+const TABS: { to: string; label: string; icon: EmojiName }[] = [
+  { to: '/', label: 'Start', icon: 'house' },
+  { to: '/lernen', label: 'Lernen', icon: 'books' },
   { to: '/erfolge', label: 'Erfolge', icon: 'trophy' },
   { to: '/einstellungen', label: 'Mehr', icon: 'gear' },
 ]
@@ -99,7 +99,7 @@ export function App() {
             <div className="mx-auto flex max-w-xl gap-1">
               {TABS.map((t) => (
                 <NavLink key={t.to} to={t.to} end={t.to === '/'} className={tab}>
-                  <Icon name={t.icon} />
+                  <Emoji name={t.icon} />
                   {t.label}
                 </NavLink>
               ))}
