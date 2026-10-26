@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Icon, type IconName } from './icons'
+import { Emoji, type EmojiName } from './Emoji'
+import { Icon } from './icons'
 import { Mascot, type Mood } from './Mascot'
 import { card, choice, chosen, heading, muted } from './ui'
 
@@ -41,12 +42,12 @@ export function PageTitle({ title, back, children }: { title: string; back?: str
 
 // Zeile in einer Liste wie bei den Handy-Einstellungen.
 // Zeile mit Symbol, als Link (to) oder Knopf (onClick).
-export function ListRow(props: { to?: string; onClick?: () => void; icon: IconName; color: string; title: string; detail?: string }) {
+export function ListRow(props: { to?: string; onClick?: () => void; icon: EmojiName; color: string; title: string; detail?: string }) {
   const cls = 'flex w-full items-center gap-3 px-4 py-3 text-left active:bg-slate-50 dark:active:bg-slate-800'
   const body = (
     <>
-      <span className="flex size-9 items-center justify-center rounded-xl text-white" style={{ backgroundColor: props.color }}>
-        <Icon name={props.icon} className="size-5" />
+      <span className="flex size-11 items-center justify-center rounded-2xl" style={{ backgroundColor: `${props.color}22` }}>
+        <Emoji name={props.icon} className="size-7" />
       </span>
       <span className="min-w-0 flex-1">
         <span className="block font-bold">{props.title}</span>

@@ -1,4 +1,4 @@
-import { Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { PROVIDERS } from '../../config/providers'
 import { MODES, modeEnabled } from '../../modes/modes'
 import { canListen } from '../../modes/speak/recognition'
@@ -21,15 +21,24 @@ export function SettingsPage() {
   return (
     <div>
       <PageTitle title="Mehr" />
+      {profile && (
+        <Link to="/einstellungen/profil" className="mb-4 flex animate-pop items-center gap-3 rounded-[26px] bg-gradient-to-br from-indigo-500 to-violet-600 p-4 text-white shadow-[0_14px_30px_-12px_rgb(79_70_229/0.7)]">
+          <span className="flex size-14 items-center justify-center rounded-full bg-white/20 text-3xl">{profile.avatar || '🙂'}</span>
+          <span className="flex-1">
+            <b className="block font-display text-xl">{profile.name}</b>
+            <span className="text-sm text-indigo-100">Profil bearbeiten oder wechseln</span>
+          </span>
+          <Icon name="chevron" className="size-5 text-indigo-200" />
+        </Link>
+      )}
       <div className={`${card} animate-pop divide-y divide-slate-100 overflow-hidden p-0 dark:divide-slate-800`}>
-        <ListRow to="/einstellungen/profil" icon="user" color="#F97316" title="Profil" detail={profile ? `${profile.avatar} ${profile.name}` : undefined} />
-        <ListRow to="/einstellungen/lernen" icon="sliders" color="#6366F1" title="Lernen" detail={`Tagesziel ${settings.dailyGoal} · Karteikarten: ${settings.flashcardConfirm === 'flip' ? 'Umdrehen' : 'Swipe'}`} />
-        <ListRow to="/einstellungen/scan" icon="camera" color="#0EA5E9" title="Foto-Scan" detail={chain.map((p) => PROVIDERS[p].label).join(' → ')} />
+        <ListRow to="/einstellungen/lernen" icon="books" color="#6366F1" title="Lernen" detail={`Tagesziel ${settings.dailyGoal} · Karteikarten: ${settings.flashcardConfirm === 'flip' ? 'Umdrehen' : 'Swipe'}`} />
+        <ListRow to="/einstellungen/scan" icon="camera" color="#0EA5E9" title="Foto-Scan & KI" detail={chain.map((p) => PROVIDERS[p].label).join(' → ')} />
         <ListRow to="/einstellungen/darstellung" icon="palette" color="#EC4899" title="Darstellung" detail={`${settings.theme === 'dark' ? 'Dunkel' : 'Hell'} · Töne ${settings.sounds ? 'an' : 'aus'} · Vibration ${settings.haptics ? 'an' : 'aus'}`} />
-        <ListRow to="/einstellungen/daten" icon="database" color="#10B981" title="Daten" detail="Sichern und wiederherstellen" />
+        <ListRow to="/einstellungen/daten" icon="disk" color="#10B981" title="Daten" detail="Sichern und wiederherstellen" />
       </div>
       <div className={`${card} animate-pop mt-4 divide-y divide-slate-100 overflow-hidden p-0 dark:divide-slate-800`} style={{ animationDelay: '80ms' }}>
-        <ListRow onClick={() => restartTour(updateSettings, navigate)} icon="sparkle" color="#F59E0B" title="Anleitung" detail="So funktioniert VocSnap" />
+        <ListRow onClick={() => restartTour(updateSettings, navigate)} icon="bulb" color="#F59E0B" title="Anleitung" detail="So funktioniert VocSnap" />
         <ListRow to="/einstellungen/info" icon="info" color="#64748B" title="Über VocSnap" />
       </div>
     </div>
