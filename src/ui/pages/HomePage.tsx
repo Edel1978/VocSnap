@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { languageColor, languageLabel } from '../../config/languages'
 import { backupDue } from '../../data/backup'
-import type { Direction } from '../../data/types'
 import { addDays, isoDay } from '../../learn/dates'
 import { cardKey, computeStates, dayNumber, isDue } from '../../learn/leitner'
+import { lessonProgress } from '../../learn/progress'
 import { directionsOf } from '../../learn/session'
 import { wrongWordIds } from '../../learn/stats'
 import { rankOf } from '../../learn/motivation'
@@ -21,7 +21,6 @@ import { loadStats } from '../stats'
 import { card, muted, primary, wordsLabel } from '../ui'
 import { useAsync } from '../useAsync'
 
-const DIRS: Direction[] = ['to_target', 'to_source']
 const WEEK = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const tile = `${card} animate-pop`
 
@@ -73,14 +72,11 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
     return {
       exams: await Promise.all(upcomingExams(await store.listExams(profileId), isoDay()).map((e) => loadExam(store, e, intervals))),
       stats: await loadStats(store, profileId, settings.dailyGoal),
-      lessons: lessons.map((l, i) => {
-        const cards = words[i].length * DIRS.length
-        const safe = words[i].reduce(
-          (n, w) => n + DIRS.filter((d) => (states.get(cardKey(w.id, d))?.box ?? 0) >= 3).length,
-          0,
-        )
-        return { lesson: l, count: words[i].length, safe: cards ? Math.round((safe / cards) * 100) : 0 }
-      }),
+      lessons: lessons.map((l, i) => ({
+        lesson: l,
+        count: words[i].length,
+        safe: lessonProgress(words[i], states, directionsOf(settings.learnDirection)).safePct,
+      })),
       total: all.length,
       errors: all.filter((w) => wrong.has(w.id)).length,
       // Fällige Wörter in der Richtung, die „Weiterlernen" abfragt.
@@ -119,7 +115,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
 
   // Füllt die Bildschirmhöhe: die Kacheln wachsen mit, gescrollt wird nur auf sehr kleinen Handys.
   return (
-    <div className="flex min-h-[calc(100dvh-7.5rem)] flex-col gap-2.5 pt-3">
+    <div className="flex min-h-[calc(100dvh-8.25rem)] flex-col gap-2.5">
       <header className="flex items-center gap-2">
         <Mascot mood={mood} className="w-11 shrink-0" />
         <div className="min-w-0 flex-1">
@@ -317,10 +313,10 @@ const examWhen = (e: ExamData) => (e.plan.daysLeft === 0 ? 'heute' : e.plan.days
 function HomeTile(props: { to: string; emoji: EmojiName; colors: string; title: string; text: string; big?: string }) {
   return (
     <Link to={props.to} className={`relative flex animate-pop items-center gap-2.5 overflow-hidden rounded-3xl bg-gradient-to-br ${props.colors} p-3 text-white`}>
-      <Emoji name={props.emoji} className="size-10 drop-shadow" />
-      <span className="min-w-0">
-        <b className="block truncate font-display leading-tight">{props.title}</b>
-        <span className="text-[11px] font-semibold opacity-90">{props.text}</span>
+      <Emoji name={props.emoji} className="size-9 drop-shadow" />
+      <span className="relative min-w-0">
+        <b className="block font-display text-[15px] leading-tight">{props.title}</b>
+        <span className="block text-[11px] leading-tight font-semibold opacity-90">{props.text}</span>
       </span>
       {props.big && <span className="pointer-events-none absolute -right-1 -bottom-4 font-display text-6xl font-bold opacity-20">{props.big}</span>}
     </Link>

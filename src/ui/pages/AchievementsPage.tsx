@@ -5,7 +5,6 @@ import { BADGES, badgeCount, badgeProgress, rankOf, STREAK_FREEZES, TIER_NAMES }
 import { useApp } from '../AppContext'
 import { ErrorBox, Loading, PageTitle, Section } from '../components'
 import { Emoji, type EmojiName } from '../Emoji'
-import { Icon } from '../icons'
 import { Mascot } from '../Mascot'
 import { loadStats, type ProfileStats } from '../stats'
 import { card, chosen, choice, muted } from '../ui'
@@ -16,6 +15,7 @@ const WEEKS = 12
 export function AchievementsPage() {
   const { store, profile, profiles, settings } = useApp()
   const [board, setBoard] = useState<'week' | 'total'>('week')
+  const [view, setView] = useState<'badges' | 'stats' | 'board'>('badges')
   const list = profiles.state === 'ready' ? profiles.list : []
   const [data] = useAsync(
     async () => Promise.all(list.map(async (p) => ({ profile: p, stats: await loadStats(store, p.id, settings.dailyGoal) }))),
@@ -36,33 +36,56 @@ export function AchievementsPage() {
 
       <LevelCard stats={mine} />
 
-      <div className="grid grid-cols-2 gap-2.5">
-        {[
-          ['Serie', `${mine.streak}`, 'flame'],
-          ['Beste Serie', `${mine.bestStreak}`, 'star'],
-          ['Schutztage frei', `${mine.freezesLeft}/${STREAK_FREEZES}`, 'shield'],
-          ['Abfragen', `${mine.reviews}`, 'check'],
-        ].map(([label, value, icon], i) => (
-          <div key={label} className={`${card} animate-pop flex items-center gap-3 px-3 py-2.5`} style={{ animationDelay: `${60 * i}ms` }}>
-            <Icon name={icon as 'flame'} className={`size-6 ${icon === 'shield' ? 'text-sky-500' : 'text-orange-500'}`} />
-            <div>
-              <b className="block font-display text-2xl leading-none">{value}</b>
-              <span className="text-xs font-bold text-slate-500">{label}</span>
-            </div>
-          </div>
+      {/* Reiter statt langer Seite: Abzeichen, Statistik, Bestenliste. */}
+      <div className={`grid ${ranked.length > 1 ? 'grid-cols-3' : 'grid-cols-2'} gap-1 rounded-2xl bg-slate-200/70 p-1 dark:bg-slate-800`} role="tablist">
+        {(
+          [
+            ['badges', 'Abzeichen'],
+            ['stats', 'Statistik'],
+            ...(ranked.length > 1 ? ([['board', 'Bestenliste']] as const) : []),
+          ] as const
+        ).map(([k, label]) => (
+          <button
+            key={k}
+            type="button"
+            role="tab"
+            aria-selected={view === k}
+            onClick={() => setView(k)}
+            className={`rounded-xl py-2 text-sm font-bold transition ${view === k ? 'bg-white text-indigo-700 shadow-card dark:bg-slate-900 dark:text-indigo-300' : 'text-slate-500'}`}
+          >
+            {label}
+          </button>
         ))}
       </div>
-      <p className={`${muted} -mt-1 px-1 text-xs`}>
-        Schutztage retten deine Serie, wenn du mal einen Tag nicht lernst. Du hast {STREAK_FREEZES} pro 30 Tage, sie werden automatisch genutzt.
-      </p>
 
-      <Section title="Lern-Kalender">
-        <Heatmap perDay={mine.reviewsPerDay} frozen={mine.frozenDays} />
-      </Section>
+      {view === 'stats' && (
+        <>
+          <div className={`${card} grid animate-pop grid-cols-4 gap-1 text-center`}>
+            {(
+              [
+                ['fire', `${mine.streak}`, 'Serie'],
+                ['star', `${mine.bestStreak}`, 'Beste'],
+                ['shield', `${mine.freezesLeft}/${STREAK_FREEZES}`, 'Schutztage'],
+                ['check', `${mine.reviews}`, 'Abfragen'],
+              ] as const
+            ).map(([emoji, value, label]) => (
+              <div key={label}>
+                <Emoji name={emoji} className="mx-auto size-8" />
+                <b className="mt-1 block font-display text-xl leading-none">{value}</b>
+                <span className="text-[11px] font-bold text-slate-500">{label}</span>
+              </div>
+            ))}
+          </div>
+          <p className={`${muted} -mt-1 px-1 text-xs`}>Schutztage retten deine Serie, wenn du mal einen Tag nicht lernst ({STREAK_FREEZES} pro 30 Tage, automatisch).</p>
+          <Section title="Lern-Kalender">
+            <Heatmap perDay={mine.reviewsPerDay} frozen={mine.frozenDays} />
+          </Section>
+        </>
+      )}
 
-      <Badges stats={mine} />
+      {view === 'badges' && <Badges stats={mine} />}
 
-      {ranked.length > 1 && (
+      {view === 'board' && ranked.length > 1 && (
         <Section
           title="Bestenliste"
           action={
@@ -186,12 +209,9 @@ function Badges({ stats }: { stats: ProfileStats }) {
   const shown = list.filter((x) => (filter === 'earned' ? x.p.tier > 0 : filter === 'close' ? !x.b.secret && x.p.next !== undefined && ratio(x) >= 0.5 : true))
   return (
     <section className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <h2 className="text-2xl font-semibold">Abzeichen</h2>
-        <span className={muted}>
-          {count.earned} von {count.total} Stufen
-        </span>
-      </div>
+      <p className={`${muted} -mb-1 px-1`}>
+        {count.earned} von {count.total} Stufen erreicht
+      </p>
       <div className="flex justify-around rounded-3xl bg-gradient-to-r from-indigo-600 to-violet-600 p-3 text-white">
         {TIER_NAMES.map((name, t) => (
           <div key={name} className="text-center">
