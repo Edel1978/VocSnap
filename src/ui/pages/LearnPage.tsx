@@ -26,7 +26,8 @@ import { Empty, ErrorBox, Loading, PageTitle, Toggle } from '../components'
 import { Confetti } from '../Confetti'
 import { Mascot } from '../Mascot'
 import { haptic } from '../haptics'
-import { Icon, type IconName } from '../icons'
+import { Emoji, type EmojiName } from '../Emoji'
+import { Icon } from '../icons'
 import { button, card, choice, chosen as chosenCls, muted, press, primary } from '../ui'
 import { useAsync } from '../useAsync'
 
@@ -37,13 +38,13 @@ const DIRECTIONS: { value: DirectionChoice; label: string }[] = [
 ]
 
 // Aussehen der Lernmodi auf der Auswahlseite.
-const MODE_LOOK: Record<ModeId, { icon: IconName; color: string; text: string }> = {
-  flashcard: { icon: 'cards', color: '#6366F1', text: 'Umdrehen und selbst bewerten' },
-  multiple_choice: { icon: 'list', color: '#F97316', text: 'Aus 4 Antworten wählen' },
-  typing: { icon: 'keyboard', color: '#10B981', text: 'Antwort eintippen' },
-  listen_write: { icon: 'ear', color: '#EC4899', text: 'Anhören und schreiben' },
-  matching: { icon: 'puzzle', color: '#0EA5E9', text: 'Paare zuordnen' },
-  speak: { icon: 'mic', color: '#8B5CF6', text: 'Wort deutlich ins Mikrofon sagen' },
+const MODE_LOOK: Record<ModeId, { emoji: EmojiName; colors: string; text: string }> = {
+  flashcard: { emoji: 'cards', colors: 'from-indigo-400 to-indigo-600', text: 'Umdrehen und bewerten' },
+  multiple_choice: { emoji: 'tabs', colors: 'from-orange-400 to-orange-600', text: 'Aus 4 Antworten wählen' },
+  typing: { emoji: 'keyboard', colors: 'from-emerald-400 to-emerald-600', text: 'Antwort eintippen' },
+  listen_write: { emoji: 'ear', colors: 'from-pink-400 to-pink-600', text: 'Hören und schreiben' },
+  matching: { emoji: 'puzzle', colors: 'from-sky-400 to-sky-600', text: 'Paare zuordnen' },
+  speak: { emoji: 'mic', colors: 'from-violet-400 to-violet-600', text: 'Ins Mikrofon sagen' },
 }
 
 interface Round {
@@ -223,9 +224,10 @@ function Setup(props: {
         <p className="pr-24 font-display text-4xl leading-tight font-bold">
           {items.length > 0 ? `${items.length} ${items.length === 1 ? 'Abfrage' : 'Abfragen'}` : 'Alles erledigt'}
         </p>
+        <p className="mt-1 pr-24 text-xs text-indigo-100">{summaryText}</p>
         {items.length > 0 ? (
           <button type="button" data-tour="start-round" className={`${primary} mt-4 flex w-full items-center justify-center gap-2`} onClick={() => mode && start(mode)}>
-            <Icon name="play" /> {MODES.find((m) => m.id === mode)?.label} starten
+            <Emoji name="rocket" /> {MODES.find((m) => m.id === mode)?.label} starten
           </button>
         ) : (
           <p className="mt-2 text-sm text-indigo-100">
@@ -240,7 +242,7 @@ function Setup(props: {
       </section>
 
       <section>
-        <h2 className="mb-2.5 text-xl font-semibold">Lernmodus wählen</h2>
+        <h2 className="mb-2.5 text-xl font-semibold">Oder Lernmodus wählen</h2>
         <div className="grid grid-cols-2 gap-2.5">
           {shownModes.map((id, i) => {
             const meta = MODE_LOOK[id]
@@ -252,17 +254,16 @@ function Setup(props: {
                 disabled={!ready || items.length === 0}
                 onClick={() => start(id)}
                 style={{ animationDelay: `${60 + i * 50}ms` }}
-                className={`${card} ${press} flex animate-pop flex-col items-start gap-2 text-left disabled:opacity-50 ${
-                  mode === id ? 'ring-3 ring-indigo-400' : ''
-                } ${i === 0 && shownModes.length % 2 === 1 ? 'col-span-2 flex-row items-center' : ''}`}
+                className={`relative flex animate-pop items-center gap-2.5 overflow-hidden rounded-3xl bg-gradient-to-br p-3 text-left text-white ${press} ${meta.colors} disabled:opacity-50 ${
+                  mode === id ? 'ring-4 ring-amber-300 ring-offset-2 ring-offset-slate-50 dark:ring-offset-slate-950' : ''
+                } ${i === 0 && shownModes.length % 2 === 1 ? 'col-span-2' : ''}`}
               >
-                <span className="flex size-11 items-center justify-center rounded-2xl text-white" style={{ backgroundColor: meta.color }}>
-                  <Icon name={meta.icon} />
+                <Emoji name={meta.emoji} className="size-10 drop-shadow" />
+                <span className="min-w-0">
+                  <span className="block font-display text-[17px] leading-tight font-semibold">{MODES.find((m) => m.id === id)?.label}</span>
+                  <span className="block text-[11px] font-semibold opacity-90">{meta.text}</span>
                 </span>
-                <span>
-                  <span className="block font-display text-lg leading-tight font-semibold">{MODES.find((m) => m.id === id)?.label}</span>
-                  <span className={`${muted} block text-xs`}>{meta.text}</span>
-                </span>
+                {mode === id && <span className="absolute top-2 right-2 rounded-full bg-white/25 px-1.5 text-[10px] font-extrabold">zuletzt</span>}
               </button>
             )
           })}
@@ -271,7 +272,7 @@ function Setup(props: {
 
       <details className={`${card} animate-pop group`}>
         <summary className="flex cursor-pointer list-none items-center gap-3">
-          <Icon name="sliders" className="size-5 text-indigo-500" />
+          <Emoji name="gear" />
           <span className="flex-1">
             <span className="block font-bold">Anpassen</span>
             <span className={`${muted} block text-xs`}>{summaryText}</span>
