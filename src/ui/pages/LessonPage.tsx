@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { languageColor, languageLabel } from '../../config/languages'
 import type { Direction, Word } from '../../data/types'
 import { exampleWords } from '../../data/examples'
@@ -17,6 +17,7 @@ const DIRS: Direction[] = ['to_target', 'to_source']
 export function NewLessonPage() {
   const { store, profile } = useApp()
   const navigate = useNavigate()
+  const weiter = useSearchParams()[0].get('weiter')
   if (!profile) return <ErrorBox>Bitte zuerst ein Profil anlegen.</ErrorBox>
   return (
     <Section title="Neue Lektion">
@@ -25,7 +26,8 @@ export function NewLessonPage() {
           submitLabel="Anlegen"
           onSubmit={async (l) => {
             const lesson = await store.createLesson({ ...l, profile_id: profile.id })
-            navigate(`/lektion/${lesson.id}`, { replace: true })
+            // Aus dem Neu-Menü: direkt weiter zur KI-Wortliste.
+            navigate(`/lektion/${lesson.id}${weiter === 'ki' ? '/ki' : ''}`, { replace: true })
           }}
         />
       </div>
