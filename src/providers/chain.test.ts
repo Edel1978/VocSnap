@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PROVIDERS, type ProviderId } from '../config/providers'
-import { ChainError, resetThrottle, runChain } from './chain'
+import { ChainError, resetThrottle, runChain, runGenerate } from './chain'
 import { ScanError, type OcrProvider, type ScanErrorCode } from './types'
 
 const req = { image: new Blob(), sourceLang: 'en', targetLang: 'de' }
@@ -107,5 +107,31 @@ describe('Anbieter-Kette', () => {
     const onTry = vi.fn()
     await runChain(ORDER, KEYS, req, { ...f, now, sleep, onTry })
     expect(onTry.mock.calls.map((c) => c[0])).toEqual(['gemini', 'groq'])
+  })
+})
+
+describe('KI-Wortlisten', () => {
+  const gen = { mode: 'topic' as const, input: 'Arztbesuch', sourceLang: 'fr', targetLang: 'de', count: 10, level: 'easy' as const }
+
+  it('nutzt nur Anbieter, die Listen erstellen können', async () => {
+    resetThrottle()
+    const calls: ProviderId[] = []
+    const create = (id: ProviderId): OcrProvider => ({
+      id,
+      recognize: async () => ({ provider: id, words: [], skipped: [] }),
+      generate: async () => {
+        calls.push(id)
+        if (id === 'gemini') throw new ScanError('quota')
+        return [{ term: 'le médecin', translation: 'der Arzt' }]
+      },
+    })
+    const { result, attempts } = await runGenerate(ORDER, KEYS, gen, { create, sleep: async () => {} })
+    expect(calls).toEqual(['gemini', 'groq'])
+    expect(result[0].term).toBe('le médecin')
+    expect(attempts.map((a) => a.provider)).toEqual(['gemini', 'groq'])
+  })
+
+  it('ohne Key gibt es keinen Versuch', async () => {
+    await expect(runGenerate(ORDER, {}, gen, { create: () => ({}) as OcrProvider })).rejects.toThrow('Wortliste')
   })
 })

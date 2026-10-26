@@ -7,6 +7,8 @@ export interface ProviderConfig {
   requiresKey: boolean
   // Liefert Beispielsatz und Warnhinweis „Falscher Freund".
   extras: boolean
+  // Kann Wortlisten zu einem Thema oder aus einem Text erstellen (KI-Wortlisten).
+  generates: boolean
   online: boolean
   endpoint?: string
   // Modell je Versuch: erster Eintrag zuerst, Wiederholungen nutzen die folgenden (sparsamere) Modelle.
@@ -26,6 +28,7 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     label: 'Google Gemini',
     requiresKey: true,
     extras: true,
+    generates: true,
     online: true,
     endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
     // Aliase zeigen auf das aktuelle Flash- bzw. Flash-Lite-Modell. Flash-Lite hat ein eigenes, größeres Kontingent.
@@ -42,6 +45,7 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     label: 'Groq',
     requiresKey: true,
     extras: true,
+    generates: true,
     online: true,
     endpoint: 'https://api.groq.com/openai/v1/chat/completions',
     // Einziges Bildmodell der kostenlosen Stufe (Stand 2026-10, laut Suche, Groq-Doku nicht direkt geprüft).
@@ -57,6 +61,7 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     label: 'Tesseract',
     requiresKey: false,
     extras: false,
+    generates: false,
     online: false,
     note: 'Ohne Key, direkt auf dem Gerät. Das Foto verlässt das Gerät nicht. Nur gedruckter Text, keine Beispielsätze.',
   },
@@ -66,6 +71,10 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
 export const DEFAULT_PROVIDER_ORDER: ProviderId[] = ['gemini', 'groq', 'tesseract']
 
 export const PROVIDER_IDS = Object.keys(PROVIDERS) as ProviderId[]
+
+// KI-Wortlisten: Grenzen für Eingabe und Umfang.
+export const GENERATE_MAX_TEXT = 6000
+export const GENERATE_COUNTS = [10, 20, 30]
 
 // Sprachcodes der App → Tesseract-Sprachdaten. Neue Sprache: Paket @tesseract.js-data/<code> installieren.
 export const TESSERACT_LANGS: Record<string, string> = { en: 'eng', fr: 'fra', de: 'deu' }
