@@ -20,7 +20,7 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | R4 Geführte Einführung | fertig | Führung durch die echte App (Spotlight, Snappy-Sprechblase), Beispielwörter, Startton ohne Knopf |
 | R5 Aussprache und Fehlerbehebung | fertig | Lernmodus Aussprache (einschaltbar), 12 Fehler und Verbesserungen aus der Durchsicht |
 | R6 Testplaner und KI-Wortlisten | fertig | Vokabeltests und Klassenarbeiten (Schema 2), KI-Wortlisten zu Situation oder Text, strengere Aussprache |
-| R7 Umgestaltung | fertig | Danach R7b: Lernen mit bunten Modus-Kacheln, Erfolge mit Reitern (Abzeichen/Statistik/Bestenliste), Mehr mit Profil-Kopf und 3D-Symbolen. |
+| R7 Umgestaltung | fertig | Danach R7b: Lernen mit bunten Modus-Kacheln, Erfolge mit Reitern (Abzeichen/Statistik/Bestenliste), Mehr mit Profil-Kopf und 3D-Symbolen. Unterseiten ohne Logo-Kopfzeile, Prüfungsseite mit Countdown-Karte, Lektion mit Leiste neu/wackelig/sicher; Fortschritt und Farbpunkte nur in der gelernten Richtung (`src/learn/progress.ts`). |
 | R7a | fertig | Startseite ohne Scrollen, Snappys Tagesaufgabe, 3D-Symbole, Abzeichen mit Vitrine, Lektion, Neu-Menü, Einstellungen, Einführung angepasst |
 | E5 Motivation und Feinschliff | fertig | XP, Level, Streak, Tagesziel, Abzeichen, Bestenliste, Konfetti, Avatare, App-Icons, Offline (PWA), Navigation mit Icons |
 
