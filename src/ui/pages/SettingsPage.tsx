@@ -79,15 +79,34 @@ function LearnSettings() {
   return (
     <>
       <Section title="Tagesziel">
-        <label className="flex items-center gap-3">
+        <p className={`${muted} -mt-2 mb-3`}>Gewusste Wörter pro Tag</p>
+        <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-2 dark:bg-slate-800">
+          <button type="button" aria-label="weniger" className={`${button} size-11 text-2xl`} onClick={() => updateSettings({ dailyGoal: Math.max(1, settings.dailyGoal - 5) })}>
+            −
+          </button>
           <NumberField
-            className={`${input} w-24 text-center font-bold`}
+            className="w-20 bg-transparent text-center font-display text-3xl font-bold outline-none"
             aria-label="Tagesziel"
             value={settings.dailyGoal}
             onChange={(dailyGoal) => updateSettings({ dailyGoal })}
           />
-          <span>gewusste Vokabeln pro Tag</span>
-        </label>
+          <button type="button" aria-label="mehr" className={`${button} size-11 text-2xl`} onClick={() => updateSettings({ dailyGoal: settings.dailyGoal + 5 })}>
+            +
+          </button>
+        </div>
+        <div className="mt-2 flex gap-1.5 text-xs font-bold">
+          {(
+            [
+              [10, 'locker'],
+              [20, 'normal'],
+              [40, 'ehrgeizig'],
+            ] as const
+          ).map(([n, label]) => (
+            <button key={n} type="button" onClick={() => updateSettings({ dailyGoal: n })} className={`rounded-full px-2.5 py-1 ${settings.dailyGoal === n ? 'bg-indigo-600 text-white' : 'bg-slate-100 dark:bg-slate-800'}`}>
+              {n} {label}
+            </button>
+          ))}
+        </div>
       </Section>
 
       <Section title="Karteikarten">
@@ -119,6 +138,15 @@ function LearnSettings() {
         />
       </Section>
 
+      <details className={`${card} group`}>
+        <summary className="flex cursor-pointer list-none items-center justify-between">
+          <span>
+            <b className="block font-display text-lg">Für Profis</b>
+            <span className={muted}>Reihenfolge der Lernmodi, Tage je Fach</span>
+          </span>
+          <Icon name="chevron" className="size-5 text-slate-400 transition group-open:rotate-90" />
+        </summary>
+        <div className="mt-4 space-y-4">
       <Section title="Reihenfolge der Lernmodi">
         <ol className="space-y-2">
           {visible.map((id, i) => (
@@ -158,6 +186,8 @@ function LearnSettings() {
           ))}
         </div>
       </Section>
+        </div>
+      </details>
     </>
   )
 }
