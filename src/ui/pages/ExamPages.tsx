@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { addDays, formatDay, isoDay } from '../../learn/dates'
 import { useApp } from '../AppContext'
 import type { Exam, ExamKind, Lesson, Word } from '../../data/types'
-import { Choice, ErrorBox, Loading, Section, Toggle } from '../components'
+import { Choice, ErrorBox, Loading, PageTitle, Section, Toggle } from '../components'
+import { Emoji } from '../Emoji'
 import { EXAM_LABEL, loadExam } from '../exam'
 import { button, danger, input, muted, primary, wordsLabel } from '../ui'
 import { useAsync } from '../useAsync'
@@ -189,28 +190,37 @@ export function ExamPage() {
 
   return (
     <div className="space-y-4">
-      <Section
-        title={label}
-        action={
-          <Link to={`/pruefung/${exam.id}/bearbeiten`} className={button}>
-            Ändern
-          </Link>
-        }
+      <PageTitle title="" back="/">
+        <Link to={`/pruefung/${exam.id}/bearbeiten`} className={button}>
+          Ändern
+        </Link>
+      </PageTitle>
+      <section
+        className={`relative -mt-2 animate-pop overflow-hidden rounded-[28px] bg-gradient-to-br p-5 text-white ${
+          exam.kind === 'test' ? 'from-sky-400 to-sky-600' : 'from-orange-400 to-orange-600'
+        }`}
       >
-        <p className="text-lg font-semibold">
-          {formatDay(date)} · {when}
-        </p>
-        <p className={muted}>
-          {lessons.map((l) => l.title).join(', ')}
+        {plan.daysLeft >= 0 && (
+          <span className="pointer-events-none absolute -right-2 -bottom-8 font-display text-[120px] leading-none font-bold opacity-20">{plan.daysLeft}</span>
+        )}
+        <div className="flex items-center gap-3">
+          <Emoji name={exam.kind === 'test' ? 'check' : 'calendar'} className="size-12 drop-shadow" />
+          <div>
+            <p className="text-xs font-extrabold tracking-widest uppercase opacity-80">{label}</p>
+            <h1 className="text-3xl leading-tight font-bold">{when.charAt(0).toUpperCase() + when.slice(1)}</h1>
+          </div>
+        </div>
+        <p className="mt-2 text-sm opacity-90">
+          {formatDay(date)} · {lessons.map((l) => l.title).join(', ')}
           {exam.word_ids && ` · ${wordsLabel(words.length)} ausgewählt`}
         </p>
-        <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
-          <div className="h-full bg-emerald-600" style={{ width: `${cards ? (safe / cards) * 100 : 0}%` }} />
+        <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/25">
+          <div className="h-full rounded-full bg-white transition-[width] duration-700" style={{ width: `${cards ? (safe / cards) * 100 : 0}%` }} />
         </div>
-        <p className={`${muted} mt-1`}>
-          {safe} von {cards} Karten sicher (ab Fach 3)
+        <p className="mt-1 text-xs opacity-90">
+          {safe} von {cards} Karten sicher
         </p>
-      </Section>
+      </section>
 
       {plan.daysLeft >= 0 && (
         <Section title="Heute">
@@ -228,7 +238,8 @@ export function ExamPage() {
             </p>
           )}
           {plan.todayKeys.size > 0 && (
-            <Link to={`/lernen?pruefung=${exam.id}`} className={`${primary} mt-3 block`}>
+            <Link to={`/lernen?pruefung=${exam.id}`} className={`${primary} mt-3 flex items-center justify-center gap-2`}>
+              <Emoji name="rocket" />
               {plan.openToday === 0 ? 'Nochmal üben' : 'Jetzt lernen'}
             </Link>
           )}

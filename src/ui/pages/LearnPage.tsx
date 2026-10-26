@@ -443,7 +443,7 @@ function RoundView({
         <Mascot mood={last === 'wrong' ? 'happy' : last ? 'cheer' : 'happy'} className="w-14" />
         {combo >= 3 ? (
           <span key={combo} className="flex animate-pop items-center gap-1 rounded-full bg-orange-100 px-3 py-1 text-sm font-extrabold text-orange-600 dark:bg-orange-950">
-            <Icon name="flame" className="size-4" /> {combo} in Folge!
+            <Emoji name="fire" className="size-5" /> {combo} in Folge!
           </span>
         ) : (
           <span className={`${muted} font-semibold`}>{last === 'wrong' ? 'Nicht schlimm, weiter geht’s!' : last ? 'Weiter so!' : 'Los geht’s!'}</span>
