@@ -1,9 +1,11 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { languageColor, languageLabel } from '../../config/languages'
-import type { Direction, Word } from '../../data/types'
+import type { Word } from '../../data/types'
 import { exampleWords } from '../../data/examples'
-import { BOXES, boxOf, cardKey, computeStates } from '../../learn/leitner'
+import { lessonProgress } from '../../learn/progress'
+import { directionsOf } from '../../learn/session'
+import { BOXES, computeStates } from '../../learn/leitner'
 import { useApp } from '../AppContext'
 import { Empty, ErrorBox, Loading, PageTitle, Section } from '../components'
 import { Emoji } from '../Emoji'
@@ -12,8 +14,6 @@ import { LessonForm } from '../LessonForm'
 import { button, card, danger, input, muted, primary, wordsLabel } from '../ui'
 import { useAsync } from '../useAsync'
 import { WordForm } from '../WordForm'
-
-const DIRS: Direction[] = ['to_target', 'to_source']
 
 export function NewLessonPage() {
   const { store, profile } = useApp()
@@ -38,7 +38,7 @@ export function NewLessonPage() {
 
 export function LessonPage() {
   const { id = '' } = useParams()
-  const { store, profile } = useApp()
+  const { store, profile, settings } = useApp()
   const navigate = useNavigate()
   const [editingLesson, setEditingLesson] = useState(false)
   const [editingWord, setEditingWord] = useState<string | null>(null)
@@ -51,15 +51,12 @@ export function LessonPage() {
     const words = lesson ? await store.listWords(id) : []
     words.sort((a, b) => a.created_at.localeCompare(b.created_at))
     const states = computeStates(profile ? await store.listReviewEvents(profile.id) : [])
-    // Fach je Wort: das schwächere der beiden Richtungen.
-    const boxOfWord = new Map(words.map((w) => [w.id, Math.min(...DIRS.map((d) => boxOf(states.get(cardKey(w.id, d)))))]))
-    const safe = words.reduce((n, w) => n + DIRS.filter((d) => (states.get(cardKey(w.id, d))?.box ?? 0) >= 3).length, 0)
-    return { lesson, words, boxOfWord, safe: words.length ? Math.round((safe / (words.length * 2)) * 100) : 0 }
-  }, [store, id, profile])
+    return { lesson, words, progress: lessonProgress(words, states, directionsOf(settings.learnDirection)) }
+  }, [store, id, profile, settings.learnDirection])
 
   if (data.state === 'loading') return <Loading />
   if (data.state === 'error') return <ErrorBox />
-  const { lesson, words, boxOfWord, safe } = data.data
+  const { lesson, words, progress } = data.data
   if (!lesson) return <ErrorBox>Diese Lektion gibt es nicht mehr.</ErrorBox>
   const color = languageColor(lesson.source_lang)
   const q = query.trim().toLowerCase()
@@ -109,11 +106,20 @@ export function LessonPage() {
           </p>
           <h1 className="mt-1 text-3xl leading-tight font-bold">{lesson.title}</h1>
           <p className="mt-1 text-sm opacity-90">
-            {wordsLabel(words.length)} · {safe} % sicher
+            {wordsLabel(words.length)} · {progress.safePct} % sicher
           </p>
-          <div className="mt-3 h-2.5 overflow-hidden rounded-full bg-white/25">
-            <div className="h-full rounded-full bg-white transition-[width] duration-700" style={{ width: `${safe}%` }} />
-          </div>
+          {words.length > 0 && (
+            <>
+              <div className="mt-3 flex h-2.5 gap-1 overflow-hidden rounded-full" aria-hidden="true">
+                {progress.fresh > 0 && <span className="rounded-full bg-rose-300" style={{ flex: progress.fresh }} />}
+                {progress.wobbly > 0 && <span className="rounded-full bg-amber-300" style={{ flex: progress.wobbly }} />}
+                {progress.safe > 0 && <span className="rounded-full bg-emerald-300" style={{ flex: progress.safe }} />}
+              </div>
+              <p className="mt-1.5 text-xs opacity-90">
+                {progress.fresh} neu · {progress.wobbly} wackelig · {progress.safe} sicher
+              </p>
+            </>
+          )}
           {words.length > 0 && (
             <Link to={`/lernen?lektionen=${lesson.id}`} data-tour="learn-lesson" className={`${primary} mt-4 flex items-center justify-center gap-2`}>
               <Emoji name="rocket" /> Diese Lektion lernen
@@ -233,7 +239,7 @@ export function LessonPage() {
                 <WordRow
                   key={w.id}
                   word={w}
-                  box={boxOfWord.get(w.id) ?? 1}
+                  box={progress.boxOf.get(w.id) ?? 0}
                   onEdit={() => setEditingWord(w.id)}
                 />
               ),
@@ -248,13 +254,13 @@ export function LessonPage() {
 
 // Punkte zeigen, wie sicher das Wort sitzt (Fach 1–5).
 
-// Fach als Farbpunkt: rot neu, gelb wackelig, grün sicher. Antippen öffnet Bearbeiten (dort auch Löschen).
+// Fach als Farbpunkt: rot neu, gelb wackelig (Fach 1–2), grün sicher (ab Fach 3). Antippen öffnet Bearbeiten (dort auch Löschen).
 function WordRow({ word, box, onEdit }: { word: Word; box: number; onEdit: () => void }) {
-  const dot = box <= 1 ? 'bg-rose-400' : box === 2 ? 'bg-amber-400' : 'bg-emerald-500'
+  const dot = box === 0 ? 'bg-rose-400' : box <= 2 ? 'bg-amber-400' : 'bg-emerald-500'
   return (
     <li>
-      <button type="button" className="flex w-full items-center gap-3 py-2.5 text-left" onClick={onEdit} title={`Fach ${box} von ${BOXES}`}>
-        <span className={`size-2.5 shrink-0 rounded-full ${dot}`} aria-label={`Fach ${box}`} />
+      <button type="button" className="flex w-full items-center gap-3 py-2.5 text-left" onClick={onEdit} title={box ? `Fach ${box} von ${BOXES}` : 'Noch nicht gelernt'}>
+        <span className={`size-2.5 shrink-0 rounded-full ${dot}`} aria-label={box ? `Fach ${box}` : 'neu'} />
         <span className="min-w-0 flex-1">
           <span className="block truncate font-semibold">{word.term}</span>
           <span className={`block truncate ${muted}`}>{word.translation}</span>

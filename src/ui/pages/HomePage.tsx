@@ -1,9 +1,9 @@
 import { Link } from 'react-router-dom'
 import { languageColor, languageLabel } from '../../config/languages'
 import { backupDue } from '../../data/backup'
-import type { Direction } from '../../data/types'
 import { addDays, isoDay } from '../../learn/dates'
 import { cardKey, computeStates, dayNumber, isDue } from '../../learn/leitner'
+import { lessonProgress } from '../../learn/progress'
 import { directionsOf } from '../../learn/session'
 import { wrongWordIds } from '../../learn/stats'
 import { rankOf } from '../../learn/motivation'
@@ -21,7 +21,6 @@ import { loadStats } from '../stats'
 import { card, muted, primary, wordsLabel } from '../ui'
 import { useAsync } from '../useAsync'
 
-const DIRS: Direction[] = ['to_target', 'to_source']
 const WEEK = ['Mo', 'Di', 'Mi', 'Do', 'Fr', 'Sa', 'So']
 const tile = `${card} animate-pop`
 
@@ -73,14 +72,11 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
     return {
       exams: await Promise.all(upcomingExams(await store.listExams(profileId), isoDay()).map((e) => loadExam(store, e, intervals))),
       stats: await loadStats(store, profileId, settings.dailyGoal),
-      lessons: lessons.map((l, i) => {
-        const cards = words[i].length * DIRS.length
-        const safe = words[i].reduce(
-          (n, w) => n + DIRS.filter((d) => (states.get(cardKey(w.id, d))?.box ?? 0) >= 3).length,
-          0,
-        )
-        return { lesson: l, count: words[i].length, safe: cards ? Math.round((safe / cards) * 100) : 0 }
-      }),
+      lessons: lessons.map((l, i) => ({
+        lesson: l,
+        count: words[i].length,
+        safe: lessonProgress(words[i], states, directionsOf(settings.learnDirection)).safePct,
+      })),
       total: all.length,
       errors: all.filter((w) => wrong.has(w.id)).length,
       // Fällige Wörter in der Richtung, die „Weiterlernen" abfragt.
