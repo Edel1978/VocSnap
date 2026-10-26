@@ -229,7 +229,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
         )}
       </Link>
 
-      <div className="grid flex-1 auto-rows-fr grid-cols-2 gap-2.5">
+      <div data-tour="tiles" className="grid flex-1 auto-rows-fr grid-cols-2 gap-2.5">
         <HomeTile
           to={test ? `/pruefung/${test.exam.id}` : '/pruefung/neu?art=test'}
           emoji="check"
