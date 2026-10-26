@@ -43,7 +43,7 @@ const MODE_LOOK: Record<ModeId, { icon: IconName; color: string; text: string }>
   typing: { icon: 'keyboard', color: '#10B981', text: 'Antwort eintippen' },
   listen_write: { icon: 'ear', color: '#EC4899', text: 'Anhören und schreiben' },
   matching: { icon: 'puzzle', color: '#0EA5E9', text: 'Paare zuordnen' },
-  speak: { icon: 'mic', color: '#8B5CF6', text: 'Wort ins Mikrofon sagen' },
+  speak: { icon: 'mic', color: '#8B5CF6', text: 'Wort deutlich ins Mikrofon sagen' },
 }
 
 interface Round {

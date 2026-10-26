@@ -24,16 +24,29 @@ function norm(s: string): string {
     .replace(ARTICLES, '')
 }
 
-// Vergleicht die erkannten Alternativen mit dem erwarteten Wort.
-export function judgeSpeech(heard: string[], expected: string): ReviewResult {
-  let best: ReviewResult = 'wrong'
-  for (const v of variants(expected).map(norm)) {
-    for (const h of heard.map(norm)) {
-      if (!h || !v) continue
-      if (h === v) return 'correct'
+// Eine Erkennung: Text und Sicherheit der Spracherkennung (0..1, 0 = unbekannt).
+export interface Heard {
+  text: string
+  confidence: number
+}
+
+// Ab dieser Sicherheit gilt die Aussprache als deutlich.
+export const CLEAR = 0.7
+
+// Streng bewerten: Richtig nur, wenn die wahrscheinlichste Erkennung genau passt und deutlich war.
+// Passt nur eine weniger wahrscheinliche Alternative oder war es undeutlich, zählt es halb.
+// Betonung und einzelne Laute kann die Spracherkennung im Browser nicht bewerten.
+export function judgeSpeech(heard: Heard[], expected: string): ReviewResult {
+  const vs = variants(expected).map(norm).filter(Boolean)
+  const exact = (h: string) => vs.includes(norm(h))
+  const close = (h: string) =>
+    vs.some((v) => {
       const tolerance = v.length >= 6 ? 2 : v.length >= 3 ? 1 : 0
-      if (tolerance && distance(h, v, tolerance) <= tolerance) best = 'half'
-    }
-  }
-  return best
+      return tolerance > 0 && !!norm(h) && distance(norm(h), v, tolerance) <= tolerance
+    })
+  const [top, ...rest] = heard
+  if (!top) return 'wrong'
+  if (exact(top.text)) return top.confidence > 0 && top.confidence < CLEAR ? 'half' : 'correct'
+  if (close(top.text) || rest.some((h) => exact(h.text) || close(h.text))) return 'half'
+  return 'wrong'
 }

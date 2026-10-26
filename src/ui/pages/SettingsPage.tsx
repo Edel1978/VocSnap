@@ -111,7 +111,7 @@ function LearnSettings() {
           label="Lernmodus „Aussprache“"
           hint={
             canListen()
-              ? 'Du sagst Wörter ins Mikrofon, die App prüft die Aussprache. Braucht Internet und Zugriff aufs Mikrofon.'
+              ? 'Du sagst Wörter ins Mikrofon, die App prüft, ob sie deutlich erkannt werden. Betonung kann sie nicht bewerten. Braucht Internet und Mikrofon.'
               : 'Dieser Browser kann keine Sprache erkennen. Am besten klappt es mit Chrome.'
           }
           checked={settings.pronunciation}
