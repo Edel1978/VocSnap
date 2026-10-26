@@ -21,7 +21,7 @@ Vokabel-App als PWA. Alles Fachliche steht in `SPEC.md`, der aktuelle Stand in `
 - Logik mit Tests absichern (Leitner, Fehlertoleranz, Import, Migrationen). Für Oberfläche reicht manuelles Prüfen.
 - Fehlerfälle behandeln: Scan schlägt fehl, kein Internet, kein Key, leere Daten.
 - Lernen muss ohne Internet funktionieren.
-- Nach jeder Etappe das verbrauchte Guthaben in `HANDOFF.md` notieren. Ab ca. 70 % Verbrauch nur noch Fehler beheben und Feinschliff.
+- Nach jeder Etappe das verbrauchte Guthaben in `HANDOFF.md` notieren. Ab ca. 95 % Verbrauch nur noch Fehler beheben und Feinschliff.
 
 ## Sicherheit und Inhalte
 - Nie API-Keys, Fotos, Schulbuchinhalte oder Namen ins Repo. Keys nur lokal im Gerät.

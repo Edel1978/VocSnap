@@ -38,7 +38,7 @@ Status: offen / in Arbeit / fertig.
 
 Der Verbrauch ist in der Sitzung nicht sichtbar und muss in der Abrechnung nachgesehen werden.
 
-Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschliff.
+Startguthaben: 99 $. Ab ca. 95 % Verbrauch nur noch Fehlerbehebung und Feinschliff (am 2026-10-26 vom Nutzer von 70 % auf 95 % angehoben).
 
 ## Nächste Schritte
 
