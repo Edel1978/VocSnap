@@ -1,0 +1,16 @@
+<!-- „Neu“-Menü (aus Variante A): alle Wege an einer Stelle. -->
+<div class="pointer-events-none opacity-40">
+<header class="flex items-center justify-between pt-5"><div><p class="text-sm font-semibold text-slate-500">Montag, 26. Oktober</p><h1 class="font-display text-3xl font-semibold">Hallo Lena!</h1></div></header>
+<div class="mt-5 h-64 rounded-[28px] bg-indigo-600"></div><div class="mt-3 h-20 rounded-3xl bg-white"></div>
+</div>
+<div class="fixed inset-0 z-40 bg-indigo-950/50"></div>
+<section class="fixed inset-x-0 bottom-0 z-50 mx-auto max-w-[390px] rounded-t-[32px] bg-white p-5 pb-8">
+  <div class="mx-auto mb-4 h-1.5 w-12 rounded-full bg-slate-200"></div>
+  <h2 class="font-display text-2xl font-semibold">Was möchtest du anlegen?</h2>
+  <div class="mt-4 grid grid-cols-2 gap-2.5">
+    <a class="rounded-3xl bg-sky-50 p-4"><span class="flex size-11 items-center justify-center rounded-2xl bg-sky-500 text-white"><i data-i="camera"></i></span><b class="mt-2 block font-display">Foto scannen</b><span class="text-xs text-slate-500">Vokabelliste aus dem Buch</span></a>
+    <a class="rounded-3xl bg-orange-50 p-4"><span class="flex size-11 items-center justify-center rounded-2xl bg-orange-400 text-white"><i data-i="sparkle"></i></span><b class="mt-2 block font-display">Mit KI</b><span class="text-xs text-slate-500">Situation oder Text</span></a>
+    <a class="rounded-3xl bg-emerald-50 p-4"><span class="flex size-11 items-center justify-center rounded-2xl bg-emerald-500 text-white"><i data-i="list"></i></span><b class="mt-2 block font-display">Leere Lektion</b><span class="text-xs text-slate-500">Wörter selbst eintragen</span></a>
+    <a class="rounded-3xl bg-indigo-50 p-4"><span class="flex size-11 items-center justify-center rounded-2xl bg-indigo-500 text-white"><i data-i="calendar"></i></span><b class="mt-2 block font-display">Test planen</b><span class="text-xs text-slate-500">Vokabeltest oder Arbeit</span></a>
+  </div>
+</section>
