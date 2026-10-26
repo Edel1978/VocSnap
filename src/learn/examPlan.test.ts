@@ -45,6 +45,12 @@ describe('Lernplan zur Klassenarbeit', () => {
     expect(plan.days).toEqual([{ offset: 0, newCount: 3 - 1, finalReview: true }])
   })
 
+  it('Vokabeltest: Generalprobe nur mit neuen und unsicheren Karten', () => {
+    const cards = [seen('sicher', 4, iso(1)), seen('wackelt', 2, iso(1)), ...fresh(1)]
+    const plan = planExam(cards, '2026-05-11', INTERVALS, now, true)
+    expect([...plan.todayKeys].sort()).toEqual(['k0', 'wackelt'])
+  })
+
   it('am Tag der Arbeit nur unsichere Karten, danach nichts mehr', () => {
     const cards = [seen('sicher', 4, iso(1)), seen('wackelig', 1, iso(1)), ...fresh(1)]
     const today = planExam(cards, '2026-05-10', INTERVALS, now)

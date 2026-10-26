@@ -7,9 +7,11 @@ import { cardKey, computeStates, dayNumber, isDue } from '../../learn/leitner'
 import { directionsOf } from '../../learn/session'
 import { wrongWordIds } from '../../learn/stats'
 import { snappySays } from '../../learn/tips'
+import { useState } from 'react'
+import type { ExamKind } from '../../data/types'
 import { useApp } from '../AppContext'
 import { ErrorBox, Loading, StorageError } from '../components'
-import { examDates, loadExam } from '../exam'
+import { EXAM_LABEL, loadExam, upcomingExams, type ExamData } from '../exam'
 import { Icon } from '../icons'
 import { Mascot } from '../Mascot'
 import { ProfileForm } from '../ProfileForm'
@@ -66,7 +68,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
     const states = computeStates(events)
     const all = words.flat()
     return {
-      exams: await Promise.all(examDates(lessons, isoDay()).map((d) => loadExam(store, profileId, d, intervals))),
+      exams: await Promise.all(upcomingExams(await store.listExams(profileId), isoDay()).map((e) => loadExam(store, e, intervals))),
       stats: await loadStats(store, profileId, settings.dailyGoal),
       lessons: lessons.map((l, i) => {
         const cards = words[i].length * DIRS.length
@@ -206,21 +208,7 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
         })}
       </div>
 
-      {exams.map((e) => (
-        <Link key={e.date} to={`/arbeit/${e.date}`} className={`${tile} flex items-center gap-3`}>
-          <span className="flex size-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600 dark:bg-orange-950">
-            <Icon name="calendar" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <b className="block font-display font-semibold">Klassenarbeit {formatDay(e.date)}</b>
-            <span className={`${muted} block truncate`}>
-              {e.plan.daysLeft === 0 ? 'heute' : e.plan.daysLeft === 1 ? 'morgen' : `in ${e.plan.daysLeft} Tagen`} ·{' '}
-              {e.plan.openToday > 0 ? `heute ${e.plan.openToday} Karten` : 'für heute erledigt'}
-            </span>
-          </span>
-          <Icon name="chevron" className="size-5 text-slate-400" />
-        </Link>
-      ))}
+      <ExamSection exams={exams} />
 
       <div className="grid grid-cols-2 gap-2.5">
         <Link to="/scan" className={`${button} flex items-center gap-2 px-4 py-3.5 text-[15px]`}>
@@ -287,11 +275,6 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
               )
             })}
           </ul>
-          {lessons.length > 0 && (
-            <Link to="/arbeit" className={`${button} mt-3 block py-3 text-center`}>
-              Klassenarbeit planen
-            </Link>
-          )}
         </section>
       )}
 
@@ -299,5 +282,70 @@ function ProfileHome({ profileId, name, avatar }: { profileId: string; name: str
         Daten liegen nur auf diesem Gerät. Regelmäßig in den Einstellungen sichern.
       </p>
     </div>
+  )
+}
+
+// Prüfungen mit Reitern für Vokabeltests und Klassenarbeiten.
+function ExamSection({ exams }: { exams: ExamData[] }) {
+  const [kind, setKind] = useState<ExamKind>(exams[0]?.exam.kind ?? 'test')
+  const shown = exams.filter((e) => e.exam.kind === kind)
+  return (
+    <section className={`${tile} space-y-3`} style={{ animationDelay: '240ms' }}>
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold">Prüfungen</h2>
+      </div>
+      <div className="grid grid-cols-2 gap-1 rounded-2xl bg-slate-200/70 p-1 dark:bg-slate-800" role="tablist">
+        {(['test', 'klassenarbeit'] as const).map((k) => {
+          const n = exams.filter((e) => e.exam.kind === k).length
+          return (
+            <button
+              key={k}
+              type="button"
+              role="tab"
+              aria-selected={kind === k}
+              onClick={() => setKind(k)}
+              className={`rounded-xl py-2 text-sm font-bold transition ${
+                kind === k ? 'bg-white text-indigo-700 shadow-card dark:bg-slate-900 dark:text-indigo-300' : 'text-slate-500'
+              }`}
+            >
+              {k === 'test' ? 'Vokabeltests' : 'Klassenarbeiten'}
+              {n > 0 && ` (${n})`}
+            </button>
+          )
+        })}
+      </div>
+      {shown.length === 0 ? (
+        <p className={`${muted} px-1`}>{kind === 'test' ? 'Kein Vokabeltest geplant.' : 'Keine Klassenarbeit geplant.'}</p>
+      ) : (
+        <ul className="space-y-2">
+          {shown.map(({ exam, plan }) => (
+            <li key={exam.id}>
+              <Link to={`/pruefung/${exam.id}`} className="flex items-center gap-3 rounded-2xl bg-slate-50 p-2.5 dark:bg-slate-800">
+                <span
+                  className={`flex size-10 items-center justify-center rounded-xl ${
+                    kind === 'test' ? 'bg-sky-100 text-sky-600 dark:bg-sky-950' : 'bg-orange-100 text-orange-600 dark:bg-orange-950'
+                  }`}
+                >
+                  <Icon name={kind === 'test' ? 'check' : 'calendar'} />
+                </span>
+                <span className="min-w-0 flex-1">
+                  <b className="block font-display font-semibold">
+                    {EXAM_LABEL[exam.kind]} {formatDay(exam.date)}
+                  </b>
+                  <span className={`${muted} block truncate`}>
+                    {plan.daysLeft === 0 ? 'heute' : plan.daysLeft === 1 ? 'morgen' : `in ${plan.daysLeft} Tagen`} ·{' '}
+                    {plan.openToday > 0 ? `heute ${plan.openToday} Karten` : 'für heute erledigt'}
+                  </span>
+                </span>
+                <Icon name="chevron" className="size-5 text-slate-400" />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+      <Link to={`/pruefung/neu?art=${kind}`} className={`${button} block py-3 text-center`}>
+        {kind === 'test' ? 'Vokabeltest planen' : 'Klassenarbeit planen'}
+      </Link>
+    </section>
   )
 }

@@ -33,7 +33,14 @@ export function parseDay(iso: string): Date {
 
 // Erstellt den Plan bis zum Tag der Arbeit aus dem Leitner-Stand.
 // Neue Karten werden gleichmäßig auf die Tage vor dem letzten Tag verteilt, der letzte Tag ist Generalprobe.
-export function planExam(cards: PlanCard[], examDate: string, intervals: number[], now: Date = new Date()): ExamPlan {
+// quickFinal (Vokabeltest): Generalprobe nur mit neuen und unsicheren Karten (Fach 1–2).
+export function planExam(
+  cards: PlanCard[],
+  examDate: string,
+  intervals: number[],
+  now: Date = new Date(),
+  quickFinal = false,
+): ExamPlan {
   const today = dayNumber(now)
   const daysLeft = dayNumber(parseDay(examDate)) - today
   const seenToday = (c: PlanCard) => c.state !== undefined && dayNumber(new Date(c.state.lastAt)) === today
@@ -57,7 +64,7 @@ export function planExam(cards: PlanCard[], examDate: string, intervals: number[
 
   const todayKeys = new Set<string>()
   if (finalToday) {
-    cards.forEach((c) => todayKeys.add(c.key))
+    cards.filter((c) => !quickFinal || !c.state || c.state.box <= 2).forEach((c) => todayKeys.add(c.key))
   } else {
     startedToday.forEach((c) => todayKeys.add(c.key))
     unseenCards.slice(0, Math.max(0, quotaToday - startedToday.length)).forEach((c) => todayKeys.add(c.key))

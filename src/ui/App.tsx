@@ -84,8 +84,9 @@ export function App() {
                 <Route path="/lektion/:id/scan" element={<ScanPage />} />
                 <Route path="/lernen" element={<LearnPage />} />
                 <Route path="/erfolge" element={<AchievementsPage />} />
-                <Route path="/arbeit" element={<ExamEditPage />} />
-                <Route path="/arbeit/:date" element={<ExamPage />} />
+                <Route path="/pruefung/neu" element={<ExamEditPage />} />
+                <Route path="/pruefung/:id" element={<ExamPage />} />
+                <Route path="/pruefung/:id/bearbeiten" element={<ExamEditPage />} />
                 <Route path="/einstellungen" element={<SettingsPage />} />
                 <Route path="/einstellungen/:group" element={<SettingsGroupPage />} />
                 <Route path="*" element={<HomePage />} />

@@ -17,7 +17,7 @@ import { cardKey, computeStates, isDue, type CardState } from '../../learn/leitn
 import { formatDay } from '../../learn/dates'
 import { computeStats, rankOf } from '../../learn/motivation'
 import { wrongWordIds } from '../../learn/stats'
-import { loadExam } from '../exam'
+import { EXAM_LABEL, loadExam } from '../exam'
 import { MODES, modeEnabled, type ModeId } from '../../modes/modes'
 import { LEARNING_MODES } from '../../modes/registry'
 import type { ModeResult } from '../../modes/types'
@@ -62,7 +62,7 @@ function Learn() {
   const { store, profile, settings } = useApp()
   const [params] = useSearchParams()
   const errorsOnly = params.get('fehler') === '1'
-  const examDate = params.get('arbeit')
+  const examId = params.get('pruefung')
   const quickStart = params.get('start') === '1'
   const [round, setRound] = useState<Round | null>(null)
   const started = useRef(false)
@@ -74,7 +74,8 @@ function Learn() {
     const words = await Promise.all(lessons.map((l) => store.listWords(l.id)))
     const events = await store.listReviewEvents(profile.id)
     const wrong = errorsOnly ? wrongWordIds(events) : null
-    const exam = examDate ? await loadExam(store, profile.id, examDate, settings.leitnerIntervals) : null
+    const found = examId ? await store.getExam(examId) : undefined
+    const exam = found ? await loadExam(store, found, settings.leitnerIntervals) : null
     const states = computeStates(events)
     // „Weiterlernen": sofort mit dem zuletzt gewählten Modus und allen fälligen Karten starten.
     let quick: Round | null = null
@@ -94,6 +95,7 @@ function Learn() {
       quick,
       // Erst die heute noch offenen Karten, danach zum Nachüben alle geplanten.
       planKeys: exam ? (exam.plan.openToday > 0 ? exam.plan.openKeys : exam.plan.todayKeys) : undefined,
+      examTitle: exam ? `${EXAM_LABEL[exam.exam.kind]} ${formatDay(exam.exam.date)}` : undefined,
       preselected: exam ? exam.lessons.map((l) => l.id) : params.get('lektionen')?.split(',').filter(Boolean),
       lessons: lessons.map((lesson, i) => ({
         lesson,
@@ -101,7 +103,7 @@ function Learn() {
       })),
     }
     // Nur beim Öffnen auswerten, nicht bei jeder Einstellungsänderung.
-  }, [store, profile, errorsOnly, examDate, quickStart])
+  }, [store, profile, errorsOnly, examId, quickStart])
 
   useEffect(() => {
     if (!started.current && data.state === 'ready' && data.data?.quick) {
@@ -130,7 +132,7 @@ function Learn() {
       errorsOnly={errorsOnly}
       preselected={data.data.preselected}
       planKeys={data.data.planKeys}
-      examDate={examDate}
+      examTitle={data.data.examTitle}
       onStart={(mode, items, pool) => setRound({ mode, session: startSession(items), pool })}
     />
   )
@@ -143,7 +145,7 @@ function Setup(props: {
   preselected?: string[]
   // Klassenarbeits-Plan: nur die heute geplanten Karten.
   planKeys?: Set<string>
-  examDate?: string | null
+  examTitle?: string
   onStart: (mode: ModeId, items: StudyItem[], pool: Word[]) => void
 }) {
   const { settings } = useApp()
@@ -200,7 +202,7 @@ function Setup(props: {
     if (!planKeys) updateSettings({ learnMode: m, learnDirection: dir })
     props.onStart(m, items, words)
   }
-  const title = props.errorsOnly ? 'Fehler wiederholen' : props.examDate ? `Arbeit ${formatDay(props.examDate)}` : 'Lernen'
+  const title = props.errorsOnly ? 'Fehler wiederholen' : props.examTitle ?? 'Lernen'
   const summaryText = [
     chosen.length === props.lessons.length ? 'Alle Lektionen' : `${chosen.length} von ${props.lessons.length} Lektionen`,
     DIRECTIONS.find((d) => d.value === dir)?.label,
