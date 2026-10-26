@@ -23,7 +23,7 @@ export interface TourStep {
 const HOME = /^\/$/
 const LESSON = /^\/lektion\/(?!neu$)[^/]+$/
 // Auch die Unterseiten zum Hinzufügen gehören dazu, dort ist nur nichts markiert.
-const LESSON_ADD = /^\/lektion\/(?!neu$)[^/]+(\/(einfuegen|scan))?$/
+const LESSON_ADD = /^\/lektion\/(?!neu$)[^/]+(\/(einfuegen|scan|ki))?$/
 const LEARN = /^\/lernen$/
 const ANY = /.*/
 
@@ -100,7 +100,7 @@ export const FULL_TOUR: TourStep[] = [
     id: 'add-ways',
     path: LESSON_ADD,
     target: 'add-ways',
-    text: 'Fotografiere die Vokabelliste aus dem Buch, füge Text ein oder trag Wörter von Hand ein. Zum Ausprobieren gibt es Beispielwörter.',
+    text: 'Fotografiere die Vokabelliste aus dem Buch, lass die KI eine Liste erstellen oder trag Wörter von Hand ein. Zum Ausprobieren gibt es Beispielwörter.',
     advance: 'appear',
     free: true,
   },

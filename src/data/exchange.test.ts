@@ -23,9 +23,25 @@ const valid = () => ({
   lessons: [],
   words: [],
   reviewEvents: [],
+  exams: [],
 })
 
 describe('parseExchange', () => {
+  it('hebt Dateien aus Version 1 an: Klassenarbeiten werden zu Prüfungen', () => {
+    const lesson = (id: string, exam_date: string | null) => ({
+      ...rec(id, '2026-02-01T00:00:00.000Z'),
+      profile_id: 'p1',
+      title: id,
+      source_lang: 'en',
+      target_lang: 'de',
+      exam_date,
+    })
+    const { exams: _, ...old } = valid()
+    const d = parseExchange({ ...old, schema_version: 1, lessons: [lesson('l1', '2026-03-01'), lesson('l2', '2026-03-01'), lesson('l3', null)] })
+    expect(d.exams).toHaveLength(1)
+    expect(d.exams[0]).toMatchObject({ kind: 'klassenarbeit', date: '2026-03-01', lesson_ids: ['l1', 'l2'], word_ids: null })
+  })
+
   it('übernimmt gültige Dateien', () => {
     expect(parseExchange(valid()).profiles).toHaveLength(1)
   })

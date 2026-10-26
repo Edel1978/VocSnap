@@ -1,6 +1,6 @@
 import { PROVIDERS, type ProviderId } from '../config/providers'
 import type { ApiKeys } from './registry'
-import { ScanError, type OcrProvider, type ScanErrorCode, type ScanRequest, type ScanResult } from './types'
+import { ScanError, type GenerateRequest, type OcrProvider, type ScanErrorCode, type ScanRequest, type ScanResult, type ScannedWord } from './types'
 
 export interface ChainAttempt {
   provider: ProviderId
@@ -10,8 +10,11 @@ export interface ChainAttempt {
 }
 
 export class ChainError extends Error {
-  constructor(public attempts: ChainAttempt[]) {
-    super('Kein Anbieter konnte das Foto erkennen.')
+  constructor(
+    public attempts: ChainAttempt[],
+    message = 'Kein Anbieter konnte das Foto erkennen.',
+  ) {
+    super(message)
     this.name = 'ChainError'
   }
 }
@@ -36,12 +39,38 @@ export function hasKey(id: ProviderId, keys: ApiKeys): boolean {
 }
 
 // Probiert die Anbieter der Reihe nach. Ohne Key wird übersprungen, bei jedem Fehler geht es zum nächsten.
-export async function runChain(
+export function runChain(
   order: ProviderId[],
   keys: ApiKeys,
   req: ScanRequest,
   deps: ChainDeps,
 ): Promise<{ result: ScanResult; attempts: ChainAttempt[] }> {
+  return tryEach(order, keys, deps, (p) => p.recognize(req), 'Kein Anbieter konnte das Foto erkennen.')
+}
+
+// KI-Wortliste: wie runChain, aber nur Anbieter, die Listen erstellen können.
+export function runGenerate(
+  order: ProviderId[],
+  keys: ApiKeys,
+  req: GenerateRequest,
+  deps: ChainDeps,
+): Promise<{ result: ScannedWord[]; attempts: ChainAttempt[] }> {
+  return tryEach(
+    order.filter((id) => PROVIDERS[id].generates),
+    keys,
+    deps,
+    (p) => p.generate!(req),
+    'Kein Anbieter konnte eine Wortliste erstellen.',
+  )
+}
+
+async function tryEach<T>(
+  order: ProviderId[],
+  keys: ApiKeys,
+  deps: ChainDeps,
+  call: (p: OcrProvider) => Promise<T>,
+  failure: string,
+): Promise<{ result: T; attempts: ChainAttempt[] }> {
   const now = deps.now ?? Date.now
   const sleep = deps.sleep ?? ((ms: number) => new Promise((r) => setTimeout(r, ms)))
   const attempts: ChainAttempt[] = []
@@ -53,7 +82,7 @@ export async function runChain(
     if (gap && last !== undefined && now() - last < gap) await sleep(gap - (now() - last))
     deps.onTry?.(id)
     try {
-      const result = await deps.create(id, keys).recognize(req)
+      const result = await call(deps.create(id, keys))
       if (PROVIDERS[id].online) lastCall.set(id, now())
       attempts.push({ provider: id })
       return { result, attempts }
@@ -63,5 +92,5 @@ export async function runChain(
       attempts.push({ provider: id, error: code, message: e instanceof Error ? e.message : undefined })
     }
   }
-  throw new ChainError(attempts)
+  throw new ChainError(attempts, failure)
 }

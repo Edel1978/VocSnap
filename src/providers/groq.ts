@@ -1,6 +1,6 @@
 import { PROVIDERS } from '../config/providers'
-import { buildPrompt, parseWordsJson, postJson, toBase64, wait, withRetries } from './shared'
-import { ScanError, type OcrProvider, type ScanRequest, type ScanResult, type ScannedWord } from './types'
+import { buildGeneratePrompt, buildPrompt, parseWordsJson, postJson, toBase64, wait, withRetries } from './shared'
+import { ScanError, type GenerateRequest, type OcrProvider, type ScanRequest, type ScanResult, type ScannedWord } from './types'
 
 const cfg = PROVIDERS.groq
 
@@ -19,6 +19,15 @@ export function buildBody(model: string, imageBase64: string, mimeType: string, 
     ],
     response_format: { type: 'json_object' },
     temperature: 0.2,
+  }
+}
+
+export function buildGenerateBody(model: string, req: GenerateRequest) {
+  return {
+    model,
+    messages: [{ role: 'user', content: buildGeneratePrompt(req) }],
+    response_format: { type: 'json_object' },
+    temperature: 0.5,
   }
 }
 
@@ -44,6 +53,15 @@ export function groqProvider(apiKey: string, sleep: (ms: number) => Promise<unkn
         sleep,
       )
       return { provider: 'groq', words: parseResponse(json), skipped: [] }
+    },
+    async generate(req: GenerateRequest): Promise<ScannedWord[]> {
+      if (!apiKey) throw new ScanError('no_key')
+      const json = await withRetries(
+        cfg,
+        (model) => postJson(cfg.endpoint!, { Authorization: `Bearer ${apiKey}` }, buildGenerateBody(model, req)),
+        sleep,
+      )
+      return parseResponse(json)
     },
   }
 }

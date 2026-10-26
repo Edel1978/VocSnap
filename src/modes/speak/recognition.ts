@@ -1,11 +1,12 @@
 import { speechLang } from '../../config/languages'
+import type { Heard } from '../../learn/pronunciation'
 
 // Web Speech API, in Chrome mit Präfix. Nicht in allen Browsern vorhanden (z. B. Firefox).
 interface Recognition {
   lang: string
   interimResults: boolean
   maxAlternatives: number
-  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string }>> }) => void) | null
+  onresult: ((e: { results: ArrayLike<ArrayLike<{ transcript: string; confidence: number }>> }) => void) | null
   onerror: ((e: { error: string }) => void) | null
   onend: (() => void) | null
   start(): void
@@ -32,19 +33,19 @@ export class ListenFailed extends Error {
   }
 }
 
-// Hört einmal zu und liefert die erkannten Alternativen. stop() bricht ab.
-export function listen(lang: string): { result: Promise<string[]>; stop: () => void } {
+// Hört einmal zu und liefert die erkannten Alternativen (wahrscheinlichste zuerst). stop() bricht ab.
+export function listen(lang: string): { result: Promise<Heard[]>; stop: () => void } {
   const Ctor = ctor()
   if (!Ctor) return { result: Promise.reject(new ListenFailed('unsupported')), stop: () => {} }
   const rec = new Ctor()
   rec.lang = speechLang(lang)
   rec.interimResults = false
   rec.maxAlternatives = 5
-  const result = new Promise<string[]>((resolve, reject) => {
-    let heard: string[] = []
+  const result = new Promise<Heard[]>((resolve, reject) => {
+    let heard: Heard[] = []
     rec.onresult = (e) => {
       const first = e.results[0]
-      heard = Array.from({ length: first?.length ?? 0 }, (_, i) => first[i].transcript)
+      heard = Array.from({ length: first?.length ?? 0 }, (_, i) => ({ text: first[i].transcript, confidence: first[i].confidence || 0 }))
     }
     rec.onerror = (e) => {
       const code: ListenError =

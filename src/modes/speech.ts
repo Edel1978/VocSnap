@@ -5,7 +5,7 @@ export function canSpeak(): boolean {
 }
 
 // Spricht den Text mit einer Stimme der Sprache, falls vorhanden. Liefert false, wenn keine Sprachausgabe da ist.
-export function speak(text: string, lang: string): boolean {
+export function speak(text: string, lang: string, rate = 0.9): boolean {
   if (!canSpeak()) return false
   const synth = window.speechSynthesis
   synth.cancel()
@@ -15,7 +15,7 @@ export function speak(text: string, lang: string): boolean {
   const voice =
     synth.getVoices().find((v) => v.lang === u.lang) ?? synth.getVoices().find((v) => v.lang.startsWith(prefix))
   if (voice) u.voice = voice
-  u.rate = 0.9
+  u.rate = rate
   synth.speak(u)
   return true
 }

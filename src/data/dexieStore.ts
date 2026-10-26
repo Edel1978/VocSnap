@@ -3,7 +3,7 @@ import { SCHEMA_VERSION, type VocSnapDb } from './db'
 import { mergeEvents, mergeRecords, type ExchangeData, type ImportSummary } from './exchange'
 import { newId, nowIso } from './ids'
 import type { Store } from './store'
-import type { Lesson, Profile, ReviewEvent, SyncRecord, Word } from './types'
+import type { Exam, Lesson, Profile, ReviewEvent, SyncRecord, Word } from './types'
 
 export class DexieStore implements Store {
   constructor(
@@ -57,10 +57,11 @@ export class DexieStore implements Store {
     return this.update(this.db.profiles, id, patch)
   }
   deleteProfile(id: string) {
-    return this.db.transaction('rw', this.db.profiles, this.db.lessons, this.db.words, async () => {
+    return this.db.transaction('rw', this.db.profiles, this.db.lessons, this.db.words, this.db.exams, async () => {
       const lessons = await this.listLessons(id)
       for (const l of lessons) await this.remove(this.db.lessons, l.id)
       await this.removeWordsOf(lessons.map((l) => l.id))
+      for (const e of await this.listExams(id)) await this.remove(this.db.exams, e.id)
       await this.remove(this.db.profiles, id)
     })
   }
@@ -112,6 +113,24 @@ export class DexieStore implements Store {
     return this.remove(this.db.words, id)
   }
 
+  listExams(profileId: string) {
+    return this.active(this.db.exams.where('profile_id').equals(profileId).toArray())
+  }
+  getExam(id: string) {
+    return this.get(this.db.exams, id)
+  }
+  async createExam(input: Parameters<Store['createExam']>[0]) {
+    const row: Exam = { word_ids: null, ...input, ...this.meta() }
+    await this.db.exams.add(row)
+    return row
+  }
+  updateExam(id: string, patch: Parameters<Store['updateExam']>[1]) {
+    return this.update(this.db.exams, id, patch)
+  }
+  deleteExam(id: string) {
+    return this.remove(this.db.exams, id)
+  }
+
   async addReviewEvent(input: Parameters<Store['addReviewEvent']>[0]) {
     const meta = this.meta()
     const row: ReviewEvent = { ...input, at: input.at ?? meta.created_at, ...meta }
@@ -125,7 +144,7 @@ export class DexieStore implements Store {
 
   async exportAll(): Promise<ExchangeData> {
     const db = this.db
-    return db.transaction('r', db.profiles, db.lessons, db.words, db.reviewEvents, async () => ({
+    return db.transaction('r', [db.profiles, db.lessons, db.words, db.reviewEvents, db.exams], async () => ({
       app: 'vocsnap' as const,
       schema_version: SCHEMA_VERSION,
       exported_at: nowIso(),
@@ -133,25 +152,29 @@ export class DexieStore implements Store {
       lessons: await db.lessons.toArray(),
       words: await db.words.toArray(),
       reviewEvents: await db.reviewEvents.toArray(),
+      exams: await db.exams.toArray(),
     }))
   }
 
   async importAll(data: ExchangeData): Promise<ImportSummary> {
     const db = this.db
-    return db.transaction('rw', db.profiles, db.lessons, db.words, db.reviewEvents, async () => {
+    return db.transaction('rw', [db.profiles, db.lessons, db.words, db.reviewEvents, db.exams], async () => {
       const profiles = mergeRecords(await db.profiles.toArray(), data.profiles)
       const lessons = mergeRecords(await db.lessons.toArray(), data.lessons)
       const words = mergeRecords(await db.words.toArray(), data.words)
       const reviewEvents = mergeEvents(await db.reviewEvents.toArray(), data.reviewEvents)
+      const exams = mergeRecords(await db.exams.toArray(), data.exams)
       await db.profiles.bulkPut(profiles)
       await db.lessons.bulkPut(lessons)
       await db.words.bulkPut(words)
       await db.reviewEvents.bulkPut(reviewEvents)
+      await db.exams.bulkPut(exams)
       return {
         profiles: profiles.length,
         lessons: lessons.length,
         words: words.length,
         reviewEvents: reviewEvents.length,
+        exams: exams.length,
       }
     })
   }

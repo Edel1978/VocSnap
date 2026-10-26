@@ -166,7 +166,10 @@ export function LessonPage() {
               <Icon name="camera" className="size-5" /> Foto scannen
             </Link>
             <Link to={`/lektion/${lesson.id}/einfuegen`} className={`${button} flex items-center justify-center gap-2 py-3`}>
-              <Icon name="list" className="size-5" /> Aus Text
+              <Icon name="list" className="size-5" /> Liste einfügen
+            </Link>
+            <Link to={`/lektion/${lesson.id}/ki`} className={`${button} col-span-2 flex items-center justify-center gap-2 py-3`}>
+              <Icon name="sparkle" className="size-5 text-orange-500" /> Mit KI erstellen: Situation oder Text
             </Link>
           </div>
           <Section title="Von Hand eintragen">

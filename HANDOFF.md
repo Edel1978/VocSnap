@@ -18,7 +18,8 @@ Lesereihenfolge für einen Neueinstieg: `CLAUDE.md`, `SPEC.md`, diese Datei.
 | R2 Seiten und Extras | fertig | Lernen, Erfolge, Mehr, Lektion neu; Snappy-Tipps, Einführung, Töne, leere Zustände |
 | R3 Belohnungen und Anleitung | fertig | Neue Level-Kurve mit Rängen, Abzeichen in Stufen, Streak-Schutz |
 | R4 Geführte Einführung | fertig | Führung durch die echte App (Spotlight, Snappy-Sprechblase), Beispielwörter, Startton ohne Knopf |
-| R5 Aussprache und Fehlerbehebung | in Arbeit | Lernmodus Aussprache (einschaltbar), 12 Fehler und Verbesserungen aus der Durchsicht. Pull Request offen |
+| R5 Aussprache und Fehlerbehebung | fertig | Lernmodus Aussprache (einschaltbar), 12 Fehler und Verbesserungen aus der Durchsicht |
+| R6 Testplaner und KI-Wortlisten | in Arbeit | Vokabeltests und Klassenarbeiten (Schema 2), KI-Wortlisten zu Situation oder Text, strengere Aussprache. Pull Request offen |
 | E5 Motivation und Feinschliff | fertig | XP, Level, Streak, Tagesziel, Abzeichen, Bestenliste, Konfetti, Avatare, App-Icons, Offline (PWA), Navigation mit Icons |
 
 Status: offen / in Arbeit / fertig.
@@ -34,18 +35,23 @@ Status: offen / in Arbeit / fertig.
 | E2b | bitte nachtragen | bitte nachtragen |
 | E4 | ca. 26 % (ca. 26 $, gesamt seit E0) | ca. 74 % (ca. 73 $) |
 | E5 | bitte nachtragen | bitte nachtragen |
-| R1–R3 | bitte nachtragen | bitte nachtragen |
+| R1–R5 | ca. 79 % (ca. 78 $, gesamt seit E0) | ca. 21 $ |
+| R6 | bitte nachtragen | bitte nachtragen |
 
 Der Verbrauch ist in der Sitzung nicht sichtbar und muss in der Abrechnung nachgesehen werden.
 
-Startguthaben: 99 $. Ab ca. 70 % Verbrauch nur noch Fehlerbehebung und Feinschliff.
+Startguthaben: 99 $. Ab ca. 95 % Verbrauch nur noch Fehlerbehebung und Feinschliff (am 2026-10-26 vom Nutzer von 70 % auf 95 % angehoben).
 
 ## Nächste Schritte
 
-Stand 2026-10-18: R5 ist gebaut, Pull Request offen. Der Nutzer merged selbst.
+Stand 2026-10-26: R6 gebaut, Pull Request offen. Der Nutzer merged selbst.
 
-1. Aussprache auf echten Geräten prüfen (Chrome Android, Samsung Internet).
-2. Verbrauchtes Guthaben nach E5 und dem Redesign nachtragen.
+1. Rückmeldung zur Aussprache abwarten: Wenn sie nicht besser wird, Modus wieder entfernen (Wunsch des Nutzers). Echte Aussprache-Bewertung (z. B. Azure Pronunciation Assessment) steht auf der Wunschliste.
+2. KI-Wortlisten mit echten Keys prüfen lassen (Gemini und Groq, Situation und Text).
+3. Der Nutzer hat beim Testen weitere Fehler gefunden, aber noch nicht geschickt: erfragen und zuerst beheben.
+4. Guthaben nach R6 erfragen und eintragen (Grenze jetzt 95 %).
+
+Arbeitsweise mit dem Nutzer: erst Plan oder Screenshots zeigen, dann bauen; Pull Request nur auf Wunsch, er merged selbst, danach Pull Request beobachten. Antworten auf Deutsch, einfach erklärt.
 
 Arbeitsweise bisher: Arbeit auf einem Branch, Pull Request nach `main`, nach dem Merge veröffentlicht GitHub Actions automatisch.
 
@@ -149,6 +155,9 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Geführte Einführung (`src/ui/tour/`): dunkelt die Seite ab, lässt nur das markierte Element (`data-tour`) bedienbar und erklärt es in einer Snappy-Sprechblase. Schritte sind Daten in `steps.ts` (Seite, Ziel, Text, wie es weitergeht: Knopf, Tipp aufs Ziel, Seitenwechsel oder Erscheinen des nächsten Ziels). Bei Formularen und in der Lernrunde bleibt die Seite frei bedienbar.
 - Neu ohne Lektionen: Lektion anlegen, Wörter hinzufügen (oder Beispielwörter), Lektion lernen, Runde, Ergebnis, Startseite, Navigation. Mit vorhandenen Lektionen: kurzer Rundgang über die Startseite. Start nach dem ersten Profil, neu über „Mehr → Anleitung" oder „Über VocSnap". Stand liegt in den Einstellungen (`tour`), abseits der Schritte erscheint „Anleitung pausiert · Beenden".
 - Lernmodus Aussprache (`src/modes/speak/`): zeigt das deutsche Wort, die Fremdsprache wird ins Mikrofon gesprochen (Web Speech API, braucht Internet). Bewertung in `src/learn/pronunciation.ts`: ohne Groß-/Kleinschreibung, Satzzeichen und Artikel; knapp daneben = halb. Bis zu 3 Versuche, „Vorsprechen“ begrenzt auf halb. Bei Fehlern (kein Mikrofon, kein Internet, Browser ohne Erkennung) Selbstbewertung. Standardmäßig aus und unsichtbar, einschalten unter Mehr → Lernen (`settings.pronunciation`).
+- Prüfungen (Schema 2, `exams`): Vokabeltest oder Klassenarbeit mit Datum, Lektionen und optional ausgewählten Wörtern (`word_ids`). Migration übernimmt alte `lesson.exam_date` als Klassenarbeiten (feste IDs `ka-<profil>-<datum>`, auch beim Import alter Exportdateien über `UPGRADES[1]`). `exam_date` an Lektionen ist veraltet und wird nicht mehr geschrieben. Startseite: Abschnitt „Prüfungen“ mit Reitern Vokabeltests/Klassenarbeiten. Vokabeltest-Plan: Generalprobe am Vortag nur mit neuen und unsicheren Karten (Fach 1–2). Adressen `/pruefung/neu?art=…`, `/pruefung/:id`, `/pruefung/:id/bearbeiten`, Lernen mit `?pruefung=<id>`.
+- KI-Wortlisten (`/lektion/:id/ki`): Situation beschreiben oder fremdsprachigen Text einfügen bzw. .txt öffnen, Anzahl 10/20/30, Niveau Anfänger/Mittel/Fortgeschritten. Läuft über die Anbieter-Kette (`runGenerate`, nur Anbieter mit `generates`), Auftrag in `buildGeneratePrompt` (Text als Material markiert, max. 6000 Zeichen). Ergebnis in die Prüfliste wie beim Scan. Nur Groq und Gemini (Entscheidung des Nutzers, kein Claude).
+- Aussprache strenger: richtig nur, wenn die wahrscheinlichste Erkennung passt und die Sicherheit ≥ 0,7 ist (`CLEAR`), sonst halb mit neuem Versuch. Deutlichkeit wird angezeigt, „Langsam“ spricht mit Rate 0,6. Betonung kann die Browser-Erkennung grundsätzlich nicht bewerten.
 - Robustheit: Wörter aus Scan, Text und Beispielen in einer Transaktion (`Store.createWords`). Fehlerbildschirm (`ErrorBoundary`) statt weißer Seite. Speicherfehler in Formularen sichtbar. Nach einer Runde lädt die Lernseite den Stand neu. Zurück nach dem Scan fragt nach.
 - Datensicherheit: `navigator.storage.persist()` nach dem ersten Profil. Letzter Export in `settings.lastBackup`; ab 20 Wörtern erinnert die Startseite, wenn nie oder vor 14 Tagen gesichert wurde (`src/data/backup.ts`).
 - PWA: `registerType: 'prompt'`, `UpdateWatcher` lädt neue Versionen nur auf Start- oder Erfolge-Seite. Tesseract-Cache heißt nach den Paketversionen, ältere Caches werden beim Start gelöscht.
@@ -197,6 +206,21 @@ Befehle: `npm run dev`, `npm test`, `npm run build`. Basis-Pfad ist relativ (`./
 - Bilder zu Vokabeln
 - Bezahlversion
 - Weitere Sprachen
+- Tägliche Aufgaben (3 kleine Ziele pro Tag, Schatztruhe mit Bonus-XP)
+- Snappy-Garderobe: Accessoires (Mütze, Brille, Krone …) je Level oder Rang freischalten
+- Level-Aufstieg als eigener Feier-Bildschirm mit Rang und Accessoire
+- Blitzrunde (60 Sekunden, Highscore) als Lernmodus
+- Runde „Schwere Wörter“ (am häufigsten falsch)
+- Wochenrückblick am Sonntag
+- Echte Aussprache-Bewertung mit Betonung (z. B. Azure Pronunciation Assessment, kostenlose Stufe), Datenschutz für Kinderstimmen klären
+- Echte Play-Store-App mit eigener Hülle (z. B. Capacitor), dann auch Startton ohne Berührung; braucht eigene Domain wegen assetlinks
+
+## Installation auf Handys (Erfahrungen des Nutzers)
+
+- Android/Chrome: ⋮ → „App installieren“. Startton kommt automatisch (installierte Chrome-App).
+- Samsung: „Web-App installieren“ in Samsung Internet geht über Play; Play Protect blockierte, Lösung: Details → „Trotzdem installieren“. Samsung Internet lässt den Startton ohne Berührung nicht zu (vom Nutzer akzeptiert, kein Knopf).
+- Xiaomi: in Chrome installieren; vorher Einstellungen → Apps → Chrome → Weitere Berechtigungen → „Verknüpfungen auf dem Startbildschirm erstellen“ erlauben. Speicherbereiniger kann Websitedaten löschen, deshalb Sicherungs-Erinnerung.
+- Hinweise zu kommerzieller Nutzung wurden besprochen: GitHub Pages ist nicht für kommerzielle Angebote gedacht (auch nicht mit Pro), Repo hat keine LICENSE (= alle Rechte vorbehalten), Gemini verlangt für EU-Apps den Bezahl-Zugang und Mindestalter 18. Noch keine Entscheidung des Nutzers.
 
 ## Lokal weiterarbeiten
 

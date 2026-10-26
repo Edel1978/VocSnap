@@ -1,5 +1,6 @@
 import { SCHEMA_VERSION } from './db'
-import type { Lesson, Profile, ReviewEvent, SyncRecord, Word } from './types'
+import { examsFromLessons } from './exams'
+import type { Exam, Lesson, Profile, ReviewEvent, SyncRecord, Word } from './types'
 
 // Export-Datei und späteres Sync-Format. Enthält auch gelöschte Datensätze.
 export interface ExchangeData {
@@ -10,24 +11,28 @@ export interface ExchangeData {
   lessons: Lesson[]
   words: Word[]
   reviewEvents: ReviewEvent[]
+  exams: Exam[]
 }
 
-export type ExchangeTables = Pick<ExchangeData, 'profiles' | 'lessons' | 'words' | 'reviewEvents'>
+export type ExchangeTables = Pick<ExchangeData, 'profiles' | 'lessons' | 'words' | 'reviewEvents' | 'exams'>
 
 export class ImportError extends Error {
   name = 'ImportError'
 }
 
 // Hebt ältere Export-Dateien Schritt für Schritt auf SCHEMA_VERSION. Index = Ausgangsversion.
-const UPGRADES: Record<number, (d: Record<string, unknown>) => Record<string, unknown>> = {}
+const UPGRADES: Record<number, (d: Record<string, unknown>) => Record<string, unknown>> = {
+  1: (d) => ({ ...d, exams: Array.isArray(d.lessons) ? examsFromLessons(d.lessons as Lesson[]) : [] }),
+}
 
-const TABLES = ['profiles', 'lessons', 'words', 'reviewEvents'] as const
+const TABLES = ['profiles', 'lessons', 'words', 'reviewEvents', 'exams'] as const
 
 const REQUIRED: Record<(typeof TABLES)[number], string[]> = {
   profiles: ['name'],
   lessons: ['profile_id', 'title', 'source_lang', 'target_lang'],
   words: ['lesson_id', 'term', 'translation'],
   reviewEvents: ['word_id', 'profile_id', 'direction', 'mode', 'result', 'at'],
+  exams: ['profile_id', 'kind', 'date', 'lesson_ids'],
 }
 
 function isSyncRecord(r: unknown): r is SyncRecord & Record<string, unknown> {
@@ -78,6 +83,7 @@ export function parseExchange(raw: unknown): ExchangeData {
     lessons: data.lessons as Lesson[],
     words: data.words as Word[],
     reviewEvents: data.reviewEvents as ReviewEvent[],
+    exams: data.exams as Exam[],
   }
 }
 
@@ -105,4 +111,5 @@ export interface ImportSummary {
   lessons: number
   words: number
   reviewEvents: number
+  exams: number
 }

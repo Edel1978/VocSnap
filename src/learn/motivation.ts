@@ -234,7 +234,7 @@ export const BADGES: Badge[] = [
   { id: 'early', icon: '🌅', title: 'Frühaufsteher', describe: () => 'Vor 7 Uhr gelernt', value: (s) => flag(s.earlyBird), targets: [1], secret: true },
   { id: 'night', icon: '🦉', title: 'Nachteule', describe: () => 'Nach 22 Uhr gelernt', value: (s) => flag(s.nightOwl), targets: [1], secret: true },
   { id: 'comeback', icon: '💪', title: 'Comeback', describe: () => 'Nach über einer Woche Pause wieder gelernt', value: (s) => flag(s.comeback), targets: [1], secret: true },
-  { id: 'exam', icon: '📝', title: 'Gut vorbereitet', describe: () => 'Vor einer Arbeit jedes Wort geübt', value: (s) => s.examsPrepared, targets: [1], secret: true },
+  { id: 'exam', icon: '📝', title: 'Gut vorbereitet', describe: () => 'Vor einem Test oder einer Arbeit jedes Wort geübt', value: (s) => s.examsPrepared, targets: [1], secret: true },
 ]
 
 export interface BadgeProgress {

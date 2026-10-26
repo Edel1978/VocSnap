@@ -1,6 +1,6 @@
 import { PROVIDERS } from '../config/providers'
-import { buildPrompt, parseWordsJson, postJson, toBase64, wait, withRetries } from './shared'
-import { ScanError, type OcrProvider, type ScanRequest, type ScanResult, type ScannedWord } from './types'
+import { buildGeneratePrompt, buildPrompt, parseWordsJson, postJson, toBase64, wait, withRetries } from './shared'
+import { ScanError, type GenerateRequest, type OcrProvider, type ScanRequest, type ScanResult, type ScannedWord } from './types'
 
 const cfg = PROVIDERS.gemini
 
@@ -36,6 +36,13 @@ export function buildBody(imageBase64: string, mimeType: string, sourceLang: str
   }
 }
 
+export function buildGenerateBody(req: GenerateRequest) {
+  return {
+    contents: [{ parts: [{ text: buildGeneratePrompt(req) }] }],
+    generationConfig: { responseMimeType: 'application/json', responseSchema: SCHEMA, temperature: 0.5 },
+  }
+}
+
 type GeminiReply = {
   candidates?: { finishReason?: string; content?: { parts?: { text?: string; thought?: boolean }[] } }[]
 }
@@ -62,6 +69,16 @@ export function geminiProvider(apiKey: string, sleep: (ms: number) => Promise<un
         sleep,
       )
       return { provider: 'gemini', words: parseResponse(json), skipped: [] }
+    },
+    async generate(req: GenerateRequest): Promise<ScannedWord[]> {
+      if (!apiKey) throw new ScanError('no_key')
+      const body = buildGenerateBody(req)
+      const json = await withRetries(
+        cfg,
+        (model) => postJson(`${cfg.endpoint}/${model}:generateContent`, { 'x-goog-api-key': apiKey }, body),
+        sleep,
+      )
+      return parseResponse(json)
     },
   }
 }

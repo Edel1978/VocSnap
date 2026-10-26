@@ -9,6 +9,7 @@ import { ExamEditPage, ExamPage } from './pages/ExamPages'
 import { HomePage } from './pages/HomePage'
 import { LearnPage } from './pages/LearnPage'
 import { LessonPage, NewLessonPage } from './pages/LessonPage'
+import { GeneratePage } from './pages/GeneratePage'
 import { PasteImportPage } from './pages/PasteImportPage'
 import { ScanPage } from './pages/ScanPage'
 import { ScanPickPage } from './pages/ScanPickPage'
@@ -82,10 +83,12 @@ export function App() {
                 <Route path="/lektion/:id" element={<LessonPage />} />
                 <Route path="/lektion/:id/einfuegen" element={<PasteImportPage />} />
                 <Route path="/lektion/:id/scan" element={<ScanPage />} />
+                <Route path="/lektion/:id/ki" element={<GeneratePage />} />
                 <Route path="/lernen" element={<LearnPage />} />
                 <Route path="/erfolge" element={<AchievementsPage />} />
-                <Route path="/arbeit" element={<ExamEditPage />} />
-                <Route path="/arbeit/:date" element={<ExamPage />} />
+                <Route path="/pruefung/neu" element={<ExamEditPage />} />
+                <Route path="/pruefung/:id" element={<ExamPage />} />
+                <Route path="/pruefung/:id/bearbeiten" element={<ExamEditPage />} />
                 <Route path="/einstellungen" element={<SettingsPage />} />
                 <Route path="/einstellungen/:group" element={<SettingsGroupPage />} />
                 <Route path="*" element={<HomePage />} />

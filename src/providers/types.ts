@@ -24,6 +24,18 @@ export interface ScanRequest {
   onProgress?: (p: number) => void
 }
 
+// KI-Wortliste: zu einer Situation (topic) oder aus einem fremdsprachigen Text (text).
+export interface GenerateRequest {
+  mode: 'topic' | 'text'
+  input: string
+  sourceLang: string
+  targetLang: string
+  count: number
+  level: GenerateLevel
+}
+
+export type GenerateLevel = 'easy' | 'medium' | 'advanced'
+
 export type ScanErrorCode = 'no_key' | 'invalid_key' | 'quota' | 'busy' | 'offline' | 'bad_response' | 'failed'
 
 export const SCAN_ERROR_TEXT: Record<ScanErrorCode, string> = {
@@ -50,4 +62,6 @@ export class ScanError extends Error {
 export interface OcrProvider {
   id: ProviderId
   recognize(req: ScanRequest): Promise<ScanResult>
+  // Nur Anbieter mit generates in der Konfiguration.
+  generate?(req: GenerateRequest): Promise<ScannedWord[]>
 }
