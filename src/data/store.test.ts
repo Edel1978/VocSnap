@@ -1,4 +1,5 @@
 import 'fake-indexeddb/auto'
+import Dexie from 'dexie'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { SCHEMA_VERSION, VocSnapDb } from './db'
 import { DexieStore } from './dexieStore'
@@ -101,6 +102,34 @@ describe('Löschen mit Abhängigkeiten', () => {
   })
 })
 
+describe('Prüfungen', () => {
+  it('anlegen, ändern, löschen', async () => {
+    const p = await store.createProfile({ name: 'P' })
+    const e = await store.createExam({ profile_id: p.id, kind: 'test', date: '2026-11-02', lesson_ids: ['l1'] })
+    expect(e.word_ids).toBeNull()
+    await store.updateExam(e.id, { word_ids: ['w1'] })
+    expect((await store.getExam(e.id))?.word_ids).toEqual(['w1'])
+    await store.deleteExam(e.id)
+    expect(await store.listExams(p.id)).toEqual([])
+  })
+
+  it('Migration auf Schema 2 übernimmt Klassenarbeiten aus den Lektionen', async () => {
+    const name = `test-${crypto.randomUUID()}`
+    const old = new Dexie(name)
+    old.version(1).stores({ profiles: 'id, updated_at', lessons: 'id, profile_id, updated_at', words: 'id, lesson_id, updated_at', reviewEvents: 'id, profile_id, word_id, at' })
+    const base = { created_at: 't', updated_at: 't', deleted_at: null, device_id: 'd', profile_id: 'p', title: 'L', source_lang: 'en', target_lang: 'de' }
+    await old.table('lessons').bulkAdd([
+      { ...base, id: 'l1', exam_date: '2026-12-01' },
+      { ...base, id: 'l2', exam_date: null },
+    ])
+    old.close()
+    const migrated = new DexieStore(new VocSnapDb(name), 'd')
+    const exams = await migrated.listExams('p')
+    expect(exams).toHaveLength(1)
+    expect(exams[0]).toMatchObject({ kind: 'klassenarbeit', date: '2026-12-01', lesson_ids: ['l1'] })
+  })
+})
+
 describe('Export und Import', () => {
   it('überträgt alle Daten auf ein anderes Gerät', async () => {
     const p = await store.createProfile({ name: 'P' })
@@ -110,11 +139,11 @@ describe('Export und Import', () => {
     const data = await store.exportAll()
 
     const other = new DexieStore(new VocSnapDb(`test-${crypto.randomUUID()}`), 'device-b')
-    expect(await other.importAll(data)).toEqual({ profiles: 1, lessons: 1, words: 1, reviewEvents: 1 })
+    expect(await other.importAll(data)).toEqual({ profiles: 1, lessons: 1, words: 1, reviewEvents: 1, exams: 0 })
     expect((await other.listWords(l.id)).map((x) => x.term)).toEqual(['a'])
     expect(await other.listReviewEvents(p.id)).toHaveLength(1)
     // Zweiter Import ändert nichts.
-    expect(await other.importAll(data)).toEqual({ profiles: 0, lessons: 0, words: 0, reviewEvents: 0 })
+    expect(await other.importAll(data)).toEqual({ profiles: 0, lessons: 0, words: 0, reviewEvents: 0, exams: 0 })
   })
 
   it('behält lokal neuere Änderungen', async () => {

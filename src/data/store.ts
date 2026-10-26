@@ -1,5 +1,7 @@
 import type { ExchangeData, ImportSummary } from './exchange'
 import type {
+  Exam,
+  ExamInput,
   Lesson,
   LessonInput,
   Profile,
@@ -32,6 +34,13 @@ export interface Store {
   createWords(inputs: WordInput[]): Promise<Word[]>
   updateWord(id: string, patch: Partial<WordInput>): Promise<Word>
   deleteWord(id: string): Promise<void>
+
+  // Vokabeltests und Klassenarbeiten.
+  listExams(profileId: string): Promise<Exam[]>
+  getExam(id: string): Promise<Exam | undefined>
+  createExam(input: ExamInput): Promise<Exam>
+  updateExam(id: string, patch: Partial<ExamInput>): Promise<Exam>
+  deleteExam(id: string): Promise<void>
 
   addReviewEvent(input: ReviewEventInput): Promise<ReviewEvent>
   listReviewEvents(profileId: string): Promise<ReviewEvent[]>
